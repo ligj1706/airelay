@@ -1,8 +1,19 @@
 # airelay
 
+[中文](README_CN.md)
+
 Protocol relay for AI coding tools. Use any LLM with Claude Code or Codex CLI.
 
 **3.0 MB single binary. Starts in milliseconds. Zero runtime dependencies. macOS menu bar app.**
+
+## Supported Platforms
+
+| Platform | Status |
+|----------|--------|
+| macOS (Apple Silicon) | Full support — binary + tray |
+| macOS (Intel) | Full support — binary + tray |
+| Linux (x86_64) | CLI + server (no tray) |
+| Windows | CLI + server (tray untested) |
 
 ## What it does
 
