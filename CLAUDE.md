@@ -86,6 +86,9 @@ src/
 - 运行期配置变更统一经内存（共享 Arc<RwLock<Config>>）→ 托盘和 Admin API 都是写同一份内存
 - CLI switch 优先走 Admin API 热加载，服务未运行才直改文件
 - 托盘图标使用代码生成 RGBA（`Icon::from_rgba`），不依赖外部 PNG 文件
+- Admin UI 提示用内联 `showMsg()`，禁止浏览器 `alert()`/`confirm()` 弹窗
+- 大规模重命名/重构前先确认，不定夺性操作等用户决策后再执行
+- 用户说"继续""开始""先做这个"时直接执行，不追问确认
 
 ## 编译
 
