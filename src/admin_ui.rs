@@ -87,6 +87,12 @@ textarea:focus{border-color:var(--focus);box-shadow:0 0 0 3px var(--focus-ring)}
 .msg.show{display:block}
 .msg.ok{background:#EDF5F0;color:var(--green)}
 .msg.err{background:#FDF0EF;color:var(--red)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .msg.ok{background:#1C3126;color:#4EA86E}
+  :root:not([data-theme="light"]) .msg.err{background:#331C1D;color:#D97676}
+}
+[data-theme="dark"] .msg.ok{background:#1C3126;color:#4EA86E}
+[data-theme="dark"] .msg.err{background:#331C1D;color:#D97676}
 
 .provider-dots{display:flex;flex-wrap:wrap;gap:6px}
 .provider-dot{
@@ -146,11 +152,12 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
           <label>选择提供商</label>
           <select id="configProvider" onchange="onConfigProviderChange()"></select>
         </div>
-        <div style="padding-top:20px">
+        <div class="field" style="margin-bottom:0">
+          <label style="visibility:hidden">.</label>
           <button class="btn btn-outline btn-sm" onclick="testCurrent()">测试连接</button>
         </div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="showCreateForm()" style="margin-left:8px;margin-top:20px;flex-shrink:0">+ 新增</button>
+      <button class="btn btn-ghost btn-sm" onclick="showCreateForm()" style="margin-left:8px;flex-shrink:0;align-self:flex-end">+ 新增</button>
     </div>
 
     <div id="createForm" style="display:none;margin-bottom:14px;padding:12px;background:var(--code-bg);border-radius:var(--radius)">
@@ -168,7 +175,7 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
 
     <div id="configForm" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
       <div class="field">
-        <label>API Key</label>
+        <label>API Key <a href="#" id="cfgApiKeyUrl" target="_blank" style="font-weight:400;font-size:10px;color:var(--focus);text-decoration:none;margin-left:8px">获取 Key →</a></label>
         <input type="password" id="cfgApiKey" placeholder="sk-xxxxxxxx" autocomplete="off">
         <div class="hint" id="cfgKeyHint"></div>
       </div>
@@ -207,6 +214,18 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
 let state = {providers:{},default:{}};
 let editingId = null;
 
+const API_KEY_URLS = {
+  deepseek:'https://platform.deepseek.com/api_keys',
+  kimi:'https://platform.moonshot.cn/console/api-keys',
+  glm:'https://open.bigmodel.cn/usercenter/apikeys',
+  minimax:'https://platform.minimax.io/user-center/basic-information/interface-key',
+  qwen:'https://bailian.console.aliyun.com/?apiKey=1',
+  openai:'https://platform.openai.com/api-keys',
+  ollama:'',
+  lmstudio:'',
+  custom:''
+};
+
 async function load(){
   const r = await fetch('/admin/api/config');
   state = await r.json();
@@ -231,10 +250,10 @@ function renderActiveSelector(){
     if(state.default.provider === id) opt.selected = true;
     ap.appendChild(opt);
   }
-  onActiveProviderChange();
+  renderModelOptions();
 }
 
-function onActiveProviderChange(){
+function renderModelOptions(){
   const pid = document.getElementById('activeProvider').value;
   const am = document.getElementById('activeModel');
   am.innerHTML = '';
@@ -246,8 +265,19 @@ function onActiveProviderChange(){
       am.appendChild(opt);
     }
   }
-  const mid = am.value;
-  if(pid && mid){ state.default = {provider:pid, model:mid}; }
+}
+
+function onActiveProviderChange(){
+  renderModelOptions();
+  saveDefault();
+}
+
+async function saveDefault(){
+  const pid = document.getElementById('activeProvider').value;
+  const mid = document.getElementById('activeModel').value;
+  if(!pid || !mid) return;
+  state.default = {provider:pid, model:mid};
+  await fetch('/admin/api/config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({default:{provider:pid,model:mid}})});
 }
 
 function renderConfigSelector(){
@@ -275,6 +305,15 @@ function renderConfigForm(){
   document.getElementById('cfgApiKey').value = '';
   document.getElementById('cfgApiKey').placeholder = isLocal ? '本地服务无需 Key' : (p.has_key ? (p.api_key_masked||'已保存') : 'sk-xxxxxxxx');
   document.getElementById('cfgKeyHint').textContent = isLocal ? '本地模型不需要 API Key' : (p.has_key ? '已保存，输入新 Key 将覆盖' : '');
+
+  const keyUrl = API_KEY_URLS[id];
+  const linkEl = document.getElementById('cfgApiKeyUrl');
+  if(keyUrl){
+    linkEl.href = keyUrl;
+    linkEl.style.display = 'inline';
+  } else {
+    linkEl.style.display = 'none';
+  }
 
   document.getElementById('cfgBaseUrl').value = p.base_url || '';
   document.getElementById('cfgModels').value = (p.models||[]).join(', ');
@@ -349,8 +388,8 @@ async function saveAll(){
     }
   }
   const r = await fetch('/admin/api/config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.ok){ await load(); alert('全部已保存'); }
-  else { alert('保存失败'); }
+  if(r.ok){ await load(); showMsg('cfgMsg','ok','全部已保存'); }
+  else { showMsg('cfgMsg','err','保存失败'); }
 }
 
 // Theme
@@ -414,11 +453,7 @@ function showMsg(id,type,text){
 initTheme();
 
 document.getElementById('activeProvider').addEventListener('change', onActiveProviderChange);
-document.getElementById('activeModel').addEventListener('change', function(){
-  const pid = document.getElementById('activeProvider').value;
-  const mid = this.value;
-  if(pid && mid){ state.default = {provider:pid, model:mid}; }
-});
+document.getElementById('activeModel').addEventListener('change', saveDefault);
 document.getElementById('configProvider').addEventListener('change', onConfigProviderChange);
 
 load();
