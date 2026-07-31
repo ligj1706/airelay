@@ -1,0 +1,67 @@
+# airelay 配置文件
+# 默认位置: ~/.airelay/config.toml
+# 或通过 --config 参数指定
+
+[server]
+host = "127.0.0.1"
+port = 8082
+
+[default]
+provider = "deepseek"
+model = "deepseek-v4-flash"
+
+# ==================== 模型提供商（2026年7月最新） ====================
+
+[providers.deepseek]
+display_name = "DeepSeek"
+api_key = ""
+base_url = "https://api.deepseek.com/v1"
+models = ["deepseek-v4-pro", "deepseek-v4-flash"]
+
+[providers.kimi]
+display_name = "Kimi"
+api_key = ""
+base_url = "https://api.moonshot.cn/v1"
+models = ["kimi-k3", "kimi-k2.6", "kimi-k2.7-code"]
+
+[providers.glm]
+display_name = "智谱 GLM"
+api_key = ""
+base_url = "https://open.bigmodel.cn/api/paas/v4"
+models = ["glm-5.2", "glm-5.1", "glm-4.7-flash"]
+
+[providers.minimax]
+display_name = "MiniMax"
+api_key = ""
+base_url = "https://api.minimax.chat/v1"
+models = ["MiniMax-M3", "MiniMax-M2.7"]
+
+[providers.qwen]
+display_name = "阿里百炼 Qwen"
+api_key = ""
+base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+models = ["qwen3-coder-next", "qwen3-coder-plus", "qwen3.7-max"]
+
+[providers.openai]
+display_name = "OpenAI"
+api_key = ""
+base_url = "https://api.openai.com/v1"
+models = ["gpt-5.4", "gpt-5.4-mini"]
+
+[providers.ollama]
+display_name = "Ollama (本地)"
+api_key = "ollama"
+base_url = "http://localhost:11434/v1"
+models = ["qwen3-coder:latest", "deepseek-r1:latest"]
+
+[providers.lmstudio]
+display_name = "LM Studio (本地)"
+api_key = "lmstudio"
+base_url = "http://localhost:1234/v1"
+models = ["auto"]
+
+[providers.custom]
+display_name = "自定义 OpenAI 兼容"
+api_key = ""
+base_url = "https://your-api.example.com/v1"
+models = ["your-model-name"]
