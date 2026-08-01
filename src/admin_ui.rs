@@ -4,6 +4,7 @@ pub const HTML: &str = r##"<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>airelay</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23D97746'/><text x='16' y='23' text-anchor='middle' font-family='system-ui,sans-serif' font-size='18' font-weight='700' fill='white'>ar</text></svg>">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -82,6 +83,9 @@ textarea:focus{border-color:var(--focus);box-shadow:0 0 0 3px var(--focus-ring)}
 .toggle-slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s}
 .toggle input:checked+.toggle-slider{background:var(--focus)}
 .toggle input:checked+.toggle-slider:before{transform:translateX(20px)}
+.toggle-sm{width:30px;height:17px}
+.toggle-sm .toggle-slider:before{height:11px;width:11px;left:3px;bottom:3px}
+.toggle-sm input:checked+.toggle-slider:before{transform:translateX(13px)}
 
 .form-row{display:flex;gap:8px;align-items:flex-end}
 .form-row .field{flex:1}
@@ -125,7 +129,7 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
 <header>
   <div class="wrap">
     <div class="logo">airelay</div>
-    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">运行中</span><button class="btn btn-ghost btn-sm" onclick="toggleTheme()" id="themeBtn">暗色</button></div>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">运行中</span><label class="toggle toggle-sm" title="开机自启"><input type="checkbox" id="autostartToggle" onchange="toggleAutostart()"><span class="toggle-slider"></span></label><button class="btn btn-ghost btn-sm" onclick="toggleTheme()" id="themeBtn">暗色</button></div>
   </div>
 </header>
 
@@ -146,24 +150,6 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
       </div>
     </div>
     <div class="hint mt-8" style="font-size:11px">Claude Code 中可使用 <code>provider/model</code> 格式切换，或直接使用默认模型</div>
-  </div>
-</div>
-
-<!-- Auto-start Toggle -->
-<div class="section">
-  <div class="section-title">系统</div>
-  <div class="card">
-    <div class="flex-between">
-      <div>
-        <div style="font-size:13px;font-weight:500">开机自启</div>
-        <div class="hint">登录时自动启动 airelay（macOS）</div>
-      </div>
-      <label class="toggle">
-        <input type="checkbox" id="autostartToggle" onchange="toggleAutostart()">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="msg mt-8" id="autostartMsg"></div>
   </div>
 </div>
 
@@ -487,12 +473,8 @@ async function toggleAutostart(){
   const enable = document.getElementById('autostartToggle').checked;
   try{
     const r = await fetch('/admin/api/autostart', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enable})});
-    const d = await r.json();
-    if(d.ok){
-      showMsg('autostartMsg','ok', enable ? '开机自启已启用' : '开机自启已关闭');
-    }
+    if(!r.ok) throw new Error();
   }catch(e){
-    showMsg('autostartMsg','err','操作失败');
     document.getElementById('autostartToggle').checked = !enable;
   }
 }
