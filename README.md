@@ -44,7 +44,7 @@ cp target/release/airelay ~/.local/bin/
 
 ```bash
 ar          # Start proxy (menu bar tray icon on macOS)
-            # Shows "airelay 已运行" if already running
+            # Prints "airelay is running" if already started
 ```
 
 ### 3. Configure
