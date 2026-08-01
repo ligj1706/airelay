@@ -226,6 +226,7 @@ let state = {providers:{},default:{}};
 let editingId = null;
 
 const API_KEY_URLS = {
+  anthropic:'https://console.anthropic.com/keys',
   deepseek:'https://platform.deepseek.com/api_keys',
   kimi:'https://platform.moonshot.cn/console/api-keys',
   glm:'https://open.bigmodel.cn/usercenter/apikeys',

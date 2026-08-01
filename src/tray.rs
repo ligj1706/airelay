@@ -20,18 +20,30 @@ enum UserEvent {
 }
 
 fn make_icon() -> Icon {
+    const GLYPH: &[&str] = &[
+        "..#####..###....",
+        ".##...#..##.#...",
+        "##.....#.##..#..",
+        "##.....#.##..#..",
+        "##.....#.##..#..",
+        "##.....#.##..#..",
+        ".#####.#.####...",
+        ".##...#.####....",
+        ".##...#.##.#....",
+        ".##...#.##..#...",
+        ".##...#.##..#...",
+        ".##...#.##...#..",
+        ".#####..##...#..",
+        "................",
+        "................",
+        "................",
+    ];
     let mut rgba = Vec::with_capacity(16 * 16 * 4);
-    for y in 0..16u32 {
-        for x in 0..16u32 {
-            let cx: f64 = 7.5;
-            let cy: f64 = 7.5;
-            let dx = x as f64 - cx;
-            let dy = y as f64 - cy;
-            let dist = (dx * dx + dy * dy).sqrt();
-            if (dist < 7.0 && dist > 4.5) || dist < 3.5 {
-                rgba.extend_from_slice(&[0, 0, 0, 255]);
-            } else {
-                rgba.extend_from_slice(&[0, 0, 0, 0]);
+    for row in GLYPH {
+        for ch in row.chars() {
+            match ch {
+                '#' => rgba.extend_from_slice(&[0, 0, 0, 255]),
+                _ => rgba.extend_from_slice(&[0, 0, 0, 0]),
             }
         }
     }

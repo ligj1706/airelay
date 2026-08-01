@@ -95,6 +95,20 @@ impl Default for Config {
         );
 
         providers.insert(
+            "anthropic".into(),
+            ProviderConfig {
+                display_name: "Anthropic (Claude)".into(),
+                api_key: String::new(),
+                base_url: Some("https://api.anthropic.com/v1".into()),
+                models: vec![
+                    "claude-opus-4-7".into(),
+                    "claude-sonnet-4-6".into(),
+                    "claude-haiku-4-5".into(),
+                ],
+            },
+        );
+
+        providers.insert(
             "openai".into(),
             ProviderConfig {
                 display_name: "OpenAI".into(),

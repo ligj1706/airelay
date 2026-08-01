@@ -87,7 +87,7 @@ airelay-autostart status  # 查看状态
 
 - **协议转换** — 完整 Anthropic Messages ↔ OpenAI Chat Completions，以及 OpenAI Responses（Codex）
 - **SSE 流式** — 实时流转换，支持 thinking/reasoning、tool_use 和 token 用量追踪
-- **9 个预设提供商** — DeepSeek、Kimi、GLM、MiniMax、Qwen、OpenAI、Ollama、LM Studio，以及自定义
+- **10 个预设提供商** — Anthropic、DeepSeek、Kimi、GLM、MiniMax、Qwen、OpenAI、Ollama、LM Studio，以及自定义
 - **Web 管理界面** — 下拉配置，API Key 申请链接一键跳转，暗色/亮色主题，开机自启开关
 - **热加载** — Admin UI / CLI / 托盘任何方式修改配置，即时生效
 - **macOS 托盘** — 菜单栏图标，一键切换模型、打开管理界面、退出
@@ -101,6 +101,7 @@ airelay-autostart status  # 查看状态
 
 | Provider | 模型列表 |
 |----------|----------|
+| `anthropic` | claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5 |
 | `deepseek` | deepseek-v4-pro, deepseek-v4-flash |
 | `kimi` | kimi-k3, kimi-k2.6, kimi-k2.7-code |
 | `glm` | glm-5.2, glm-5.1, glm-4.7-flash |

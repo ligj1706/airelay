@@ -87,7 +87,7 @@ airelay-autostart status  # Check status
 
 - **Protocol translation** — Full Anthropic Messages ↔ OpenAI Chat Completions, plus OpenAI Responses (Codex)
 - **SSE streaming** — Real-time stream conversion with thinking/reasoning, tool use, and token usage tracking
-- **9 built-in providers** — DeepSeek, Kimi, GLM, MiniMax, Qwen, OpenAI, Ollama, LM Studio, plus custom
+- **10 built-in providers** — Anthropic, DeepSeek, Kimi, GLM, MiniMax, Qwen, OpenAI, Ollama, LM Studio, plus custom
 - **Web Admin UI** — Dropdown config, one-click API key links, dark/light theme, auto-start toggle
 - **Hot reload** — Config changes via Admin UI, CLI, or tray take effect immediately
 - **macOS tray** — Menu bar icon with model switching, config access, and graceful quit
@@ -101,6 +101,7 @@ airelay-autostart status  # Check status
 
 | Provider | Models |
 |----------|--------|
+| `anthropic` | claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5 |
 | `deepseek` | deepseek-v4-pro, deepseek-v4-flash |
 | `kimi` | kimi-k3, kimi-k2.6, kimi-k2.7-code |
 | `glm` | glm-5.2, glm-5.1, glm-4.7-flash |
