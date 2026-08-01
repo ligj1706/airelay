@@ -79,7 +79,7 @@ async fn handle_messages(
     };
 
     // Clone everything we need before spawning the stream
-    let (provider_id, provider_model, base_url, api_key, client);
+    let (provider_id, provider_model, base_url, anthropic_url, api_key, client);
     {
         let config = state.config.read().unwrap();
         let (pid, pm, _original) = config::resolve_model(&config, &req.model);
@@ -118,15 +118,92 @@ async fn handle_messages(
         provider_id = pid.to_string();
         provider_model = pm.to_string();
         base_url = provider.base_url().trim_end_matches('/').to_string();
+        anthropic_url = provider.anthropic_base_url().trim_end_matches('/').to_string();
         api_key = provider.api_key.clone();
     }
     client = state.http_client.clone();
 
+    // Anthropic passthrough: provider has native Anthropic endpoint, forward directly
+    if !anthropic_url.is_empty() {
+        let upstream_url = format!("{anthropic_url}/v1/messages");
+        debug!(
+            "直通转发: {} -> {}/{} (Anthropic passthrough via {})",
+            req.model, provider_id, provider_model, upstream_url
+        );
+
+        let stream_result = client
+            .post(&upstream_url)
+            .header("x-api-key", &api_key)
+            .header("Content-Type", "application/json")
+            .header("anthropic-version", "2023-06-01")
+            .body(body)
+            .send()
+            .await;
+
+        let response = match stream_result {
+            Ok(r) => r,
+            Err(e) => {
+                error!("上游请求失败: {e}");
+                return (
+                    StatusCode::BAD_GATEWAY,
+                    Json(anthropic_error("api_error", &format!("上游服务连接失败: {e}"))),
+                )
+                    .into_response();
+            }
+        };
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            error!("上游返回错误 {}: {}", status.as_u16(), error_body);
+            return (
+                StatusCode::BAD_GATEWAY,
+                Json(anthropic_error(
+                    "api_error",
+                    &format!("上游返回 {status}: {error_body}"),
+                )),
+            )
+                .into_response();
+        }
+
+        let stream = response.bytes_stream();
+        let body_stream = async_stream::stream! {
+            let mut stream = Box::pin(stream);
+
+            while let Some(chunk) = futures::StreamExt::next(&mut stream).await {
+                match chunk {
+                    Ok(bytes) => {
+                        let text = String::from_utf8_lossy(&bytes);
+                        yield Ok::<_, std::convert::Infallible>(text.to_string());
+                    }
+                    Err(e) => {
+                        error!("SSE 读取错误: {e}");
+                        break;
+                    }
+                }
+            }
+        };
+
+        let stream = tokio_stream::StreamExt::map(body_stream, |item| match item {
+            Ok(s) => Ok::<_, std::convert::Infallible>(s),
+        });
+
+        return Response::builder()
+            .status(StatusCode::OK)
+            .header("Content-Type", "text/event-stream")
+            .header("Cache-Control", "no-cache")
+            .header("Connection", "keep-alive")
+            .body(Body::from_stream(stream))
+            .unwrap()
+            .into_response();
+    }
+
+    // OpenAI conversion fallback: provider has no Anthropic endpoint
     let chat_req = convert::anthropic_to_openai(&req, &provider_model);
     let chat_url = format!("{base_url}/chat/completions");
 
     debug!(
-        "转发请求: {} -> {}/{} (via {})",
+        "协议转换: {} -> {}/{} (OpenAI via {})",
         req.model, provider_id, provider_model, chat_url
     );
 
@@ -411,7 +488,10 @@ async fn handle_models(State(state): State<SharedState>) -> Json<Value> {
     let mut models = Vec::new();
 
     for (provider_id, provider) in &config.providers {
-        let ready = !provider.api_key.is_empty();
+        // Only expose models from providers that have an API key configured
+        if provider.api_key.is_empty() {
+            continue;
+        }
         for model in &provider.models {
             models.push(serde_json::json!({
                 "id": format!("{provider_id}/{model}"),
@@ -419,38 +499,14 @@ async fn handle_models(State(state): State<SharedState>) -> Json<Value> {
                 "created": 0,
                 "owned_by": provider.display_name,
                 "display_name": format!("{} / {}", provider.display_name, model),
-                "ready": ready,
             }));
         }
     }
 
-    // Also add the raw model names (without provider prefix) for broad compatibility
-    for (_provider_id, provider) in &config.providers {
-        for model in &provider.models {
-            models.push(serde_json::json!({
-                "id": model,
-                "object": "model",
-                "created": 0,
-                "owned_by": provider.display_name,
-                "display_name": format!("{} / {}", provider.display_name, model),
-                "ready": !provider.api_key.is_empty(),
-            }));
-        }
-    }
-
-    // Deduplicate by id
-    let mut seen = std::collections::HashSet::new();
-    let unique: Vec<Value> = models
-        .into_iter()
-        .filter(|m| {
-            let id = m.get("id").and_then(|v| v.as_str()).unwrap_or("");
-            seen.insert(id.to_string())
-        })
-        .collect();
-
+    // If no providers configured, return empty list
     Json(serde_json::json!({
         "object": "list",
-        "data": unique
+        "data": models
     }))
 }
 
@@ -617,6 +673,7 @@ async fn handle_admin_create_provider(
             display_name,
             api_key,
             base_url,
+            anthropic_base_url: None,
             models,
         },
     );

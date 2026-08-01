@@ -24,12 +24,18 @@ pub struct ProviderConfig {
     #[serde(default)]
     pub base_url: Option<String>,
     #[serde(default)]
+    pub anthropic_base_url: Option<String>,
+    #[serde(default)]
     pub models: Vec<String>,
 }
 
 impl ProviderConfig {
     pub fn base_url(&self) -> String {
         self.base_url.clone().unwrap_or_default()
+    }
+
+    pub fn anthropic_base_url(&self) -> String {
+        self.anthropic_base_url.clone().unwrap_or_default()
     }
 }
 
@@ -50,6 +56,7 @@ impl Default for Config {
                 display_name: "DeepSeek".into(),
                 api_key: String::new(),
                 base_url: Some("https://api.deepseek.com/v1".into()),
+                anthropic_base_url: Some("https://api.deepseek.com/anthropic".into()),
                 models: vec!["deepseek-v4-pro".into(), "deepseek-v4-flash".into()],
             },
         );
@@ -60,6 +67,7 @@ impl Default for Config {
                 display_name: "Kimi".into(),
                 api_key: String::new(),
                 base_url: Some("https://api.moonshot.cn/v1".into()),
+                anthropic_base_url: None,
                 models: vec!["kimi-k3".into(), "kimi-k2.6".into(), "kimi-k2.7-code".into()],
             },
         );
@@ -70,6 +78,7 @@ impl Default for Config {
                 display_name: "智谱 GLM".into(),
                 api_key: String::new(),
                 base_url: Some("https://open.bigmodel.cn/api/paas/v4".into()),
+                anthropic_base_url: None,
                 models: vec!["glm-5.2".into(), "glm-5.1".into(), "glm-4.7-flash".into()],
             },
         );
@@ -80,6 +89,7 @@ impl Default for Config {
                 display_name: "MiniMax".into(),
                 api_key: String::new(),
                 base_url: Some("https://api.minimax.chat/v1".into()),
+                anthropic_base_url: None,
                 models: vec!["MiniMax-M3".into(), "MiniMax-M2.7".into()],
             },
         );
@@ -90,21 +100,8 @@ impl Default for Config {
                 display_name: "阿里百炼 Qwen".into(),
                 api_key: String::new(),
                 base_url: Some("https://dashscope.aliyuncs.com/compatible-mode/v1".into()),
+                anthropic_base_url: None,
                 models: vec!["qwen3-coder-next".into(), "qwen3-coder-plus".into(), "qwen3.7-max".into()],
-            },
-        );
-
-        providers.insert(
-            "anthropic".into(),
-            ProviderConfig {
-                display_name: "Anthropic (Claude)".into(),
-                api_key: String::new(),
-                base_url: Some("https://api.anthropic.com/v1".into()),
-                models: vec![
-                    "claude-opus-4-7".into(),
-                    "claude-sonnet-4-6".into(),
-                    "claude-haiku-4-5".into(),
-                ],
             },
         );
 
@@ -114,6 +111,7 @@ impl Default for Config {
                 display_name: "OpenAI".into(),
                 api_key: String::new(),
                 base_url: Some("https://api.openai.com/v1".into()),
+                anthropic_base_url: None,
                 models: vec!["gpt-5.4".into(), "gpt-5.4-mini".into()],
             },
         );
@@ -124,6 +122,7 @@ impl Default for Config {
                 display_name: "Ollama (本地)".into(),
                 api_key: "ollama".into(),
                 base_url: Some("http://localhost:11434/v1".into()),
+                anthropic_base_url: None,
                 models: vec!["qwen3-coder:latest".into(), "deepseek-r1:latest".into()],
             },
         );
@@ -134,6 +133,7 @@ impl Default for Config {
                 display_name: "LM Studio (本地)".into(),
                 api_key: "lmstudio".into(),
                 base_url: Some("http://localhost:1234/v1".into()),
+                anthropic_base_url: None,
                 models: vec!["auto".into()],
             },
         );
@@ -144,6 +144,7 @@ impl Default for Config {
                 display_name: "自定义 OpenAI 兼容".into(),
                 api_key: String::new(),
                 base_url: Some("https://your-api.example.com/v1".into()),
+                anthropic_base_url: None,
                 models: vec!["your-model-name".into()],
             },
         );
