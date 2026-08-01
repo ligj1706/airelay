@@ -1113,6 +1113,142 @@ pub fn responses_to_chat(req: &ResponsesRequest, provider_model: &str) -> OpenAI
     }
 }
 
+pub fn responses_to_anthropic(req: &ResponsesRequest, provider_model: &str) -> MessagesRequest {
+    let mut messages: Vec<AnthropicMessage> = Vec::new();
+    let mut system: Option<SystemContent> = None;
+
+    if let Some(items) = req.input.as_array() {
+        for item in items {
+            let role = item
+                .get("role")
+                .and_then(|v| v.as_str())
+                .unwrap_or("user");
+
+            if role == "system" || role == "developer" {
+                let content = item
+                    .get("content")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                if !content.is_empty() {
+                    system = Some(SystemContent::String(content.to_string()));
+                }
+                continue;
+            }
+
+            let content = item.get("content");
+            if let Some(content) = content {
+                if let Some(text) = content.as_str() {
+                    if !text.is_empty() {
+                        messages.push(AnthropicMessage {
+                            role: role.to_string(),
+                            content: AnthropicContent::String(text.to_string()),
+                        });
+                    }
+                } else if let Some(arr) = content.as_array() {
+                    let blocks: Vec<ContentBlock> = arr
+                        .iter()
+                        .filter_map(|part| {
+                            let part_type = part.get("type").and_then(|v| v.as_str())?;
+                            match part_type {
+                                "input_text" | "text" => {
+                                    let text = part.get("text").and_then(|v| v.as_str())?;
+                                    Some(ContentBlock::Text {
+                                        text: text.to_string(),
+                                        citations: None,
+                                    })
+                                }
+                                "input_image" | "image" => {
+                                    let url = part
+                                        .get("image_url")
+                                        .or(part.get("url"))
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or("");
+                                    let media_type = if url.starts_with("data:") {
+                                        url.split(';')
+                                            .next()
+                                            .and_then(|s| s.strip_prefix("data:"))
+                                            .unwrap_or("image/png")
+                                            .to_string()
+                                    } else {
+                                        "image/png".to_string()
+                                    };
+                                    let data = if url.starts_with("data:") {
+                                        url.split(',')
+                                            .nth(1)
+                                            .unwrap_or("")
+                                            .to_string()
+                                    } else {
+                                        url.to_string()
+                                    };
+                                    Some(ContentBlock::Image {
+                                        source: ImageSource {
+                                            source_type: "base64".into(),
+                                            media_type,
+                                            data,
+                                        },
+                                    })
+                                }
+                                _ => None,
+                            }
+                        })
+                        .collect();
+                    if !blocks.is_empty() {
+                        messages.push(AnthropicMessage {
+                            role: role.to_string(),
+                            content: AnthropicContent::Blocks(blocks),
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    let anthropic_tools = req.tools.as_ref().and_then(|tools| {
+        tools.as_array().map(|arr| {
+            arr.iter()
+                .filter_map(|t| {
+                    let tool_type = t.get("type").and_then(|v| v.as_str())?;
+                    match tool_type {
+                        "function" => {
+                            let name = t.get("name").and_then(|v| v.as_str())?.to_string();
+                            let description = t
+                                .get("description")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .to_string();
+                            let input_schema = t
+                                .get("parameters")
+                                .cloned()
+                                .unwrap_or(serde_json::json!({"type": "object", "properties": {}}));
+                            Some(AnthropicTool {
+                                name,
+                                description,
+                                input_schema,
+                            })
+                        }
+                        _ => None,
+                    }
+                })
+                .collect()
+        })
+    });
+
+    MessagesRequest {
+        model: provider_model.to_string(),
+        messages,
+        system,
+        max_tokens: req.max_output_tokens.unwrap_or(4096),
+        metadata: None,
+        stop_sequences: None,
+        stream: req.stream.unwrap_or(true),
+        temperature: req.temperature,
+        top_p: None,
+        top_k: None,
+        tools: anthropic_tools,
+        thinking: None,
+    }
+}
+
 /// Convert Chat SSE event string to Responses SSE event string
 pub struct ResponsesSseConverter {
     response_id: String,

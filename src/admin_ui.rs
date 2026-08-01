@@ -174,7 +174,8 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
     <div id="createForm" style="display:none;margin-bottom:14px;padding:12px;background:var(--code-bg);border-radius:var(--radius)">
       <div class="field"><label>Provider ID（唯一标识）</label><input type="text" id="newProviderId" placeholder="my-provider"></div>
       <div class="field"><label>显示名称</label><input type="text" id="newDisplayName" placeholder="我的提供商"></div>
-      <div class="field"><label>Base URL</label><input type="text" id="newBaseUrl" placeholder="https://api.example.com/v1"></div>
+      <div class="field"><label>Base URL（OpenAI 兼容）</label><input type="text" id="newBaseUrl" placeholder="https://api.example.com/v1"></div>
+      <div class="field"><label>Anthropic Base URL（可选）</label><input type="text" id="newAnthropicUrl" placeholder="https://api.example.com/anthropic"></div>
       <div class="field"><label>API Key</label><input type="password" id="newApiKey" placeholder="sk-xxxxxxxx"></div>
       <div class="field"><label>模型列表（逗号分隔）</label><input type="text" id="newModels" placeholder="model-v1, model-v2"></div>
       <div class="flex-between mt-12">
@@ -191,8 +192,12 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
         <div class="hint" id="cfgKeyHint"></div>
       </div>
       <div class="field">
-        <label>Base URL</label>
+        <label>Base URL（OpenAI 兼容）</label>
         <input type="text" id="cfgBaseUrl">
+      </div>
+      <div class="field">
+        <label>Anthropic Base URL（可选）</label>
+        <input type="text" id="cfgAnthropicUrl" placeholder="留空则使用 OpenAI 协议转换">
       </div>
       <div class="field">
         <label>模型列表（逗号分隔）</label>
@@ -328,6 +333,7 @@ function renderConfigForm(){
   }
 
   document.getElementById('cfgBaseUrl').value = p.base_url || '';
+  document.getElementById('cfgAnthropicUrl').value = p.anthropic_base_url || '';
   document.getElementById('cfgModels').value = (p.models||[]).join(', ');
 }
 
@@ -376,7 +382,8 @@ async function saveCurrent(){
   const urlVal = urlEl.value.trim();
   const models = modelsEl.value.split(/[,，]/).map(s=>s.trim()).filter(s=>s);
 
-  const body = { default: state.default, providers: { [id]: { api_key: keyVal||'', base_url: urlVal, models: models } } };
+  const anthroUrl = document.getElementById('cfgAnthropicUrl').value.trim();
+  const body = { default: state.default, providers: { [id]: { api_key: keyVal||'', base_url: urlVal, anthropic_base_url: anthroUrl, models: models } } };
 
   if(keyVal) state.providers[id].has_key = true;
   if(keyVal) state.providers[id].api_key_masked = '****'+keyVal.slice(-4);
@@ -392,9 +399,10 @@ async function saveAll(){
     if(id === editingId){
       const keyVal = document.getElementById('cfgApiKey').value.trim();
       const urlVal = document.getElementById('cfgBaseUrl').value.trim();
+      const anthroUrl = document.getElementById('cfgAnthropicUrl').value.trim();
       const modelsRaw = document.getElementById('cfgModels').value;
       const models = modelsRaw.split(/[,，]/).map(s=>s.trim()).filter(s=>s);
-      body.providers[id] = { api_key: keyVal||'', base_url: urlVal, models: models };
+      body.providers[id] = { api_key: keyVal||'', base_url: urlVal, anthropic_base_url: anthroUrl, models: models };
     } else {
       body.providers[id] = { models: state.providers[id].models };
     }
@@ -428,6 +436,7 @@ function hideCreateForm(){
   document.getElementById('newProviderId').value = '';
   document.getElementById('newDisplayName').value = '';
   document.getElementById('newBaseUrl').value = '';
+  document.getElementById('newAnthropicUrl').value = '';
   document.getElementById('newApiKey').value = '';
   document.getElementById('newModels').value = '';
 }
@@ -436,11 +445,12 @@ async function doCreateProvider(){
   const id = document.getElementById('newProviderId').value.trim();
   const dn = document.getElementById('newDisplayName').value.trim();
   const url = document.getElementById('newBaseUrl').value.trim();
+  const anthroUrl = document.getElementById('newAnthropicUrl').value.trim();
   const key = document.getElementById('newApiKey').value.trim();
   const models = document.getElementById('newModels').value.split(/[,，]/).map(s=>s.trim()).filter(s=>s);
   if(!id){ showMsg('createMsg','err','Provider ID 不能为空'); return; }
   showMsg('createMsg','ok','创建中…');
-  const r = await fetch('/admin/api/provider', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,display_name:dn||id,base_url:url,api_key:key,models:models})});
+  const r = await fetch('/admin/api/provider', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,display_name:dn||id,base_url:url,anthropic_base_url:anthroUrl||null,api_key:key,models:models})});
   const d = await r.json();
   if(r.ok){ hideCreateForm(); await load(); showMsg('cfgMsg','ok','提供商已创建'); }
   else { showMsg('createMsg','err',d.error||'创建失败'); }

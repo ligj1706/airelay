@@ -325,7 +325,7 @@ async fn handle_responses(
         }
     };
 
-    let (provider_model, base_url, api_key, client);
+    let (provider_model, base_url, anthropic_url, api_key, client);
     {
         let config = state.config.read().unwrap();
         let (provider_id, pm, _original) = config::resolve_model(&config, &req.model);
@@ -362,10 +362,108 @@ async fn handle_responses(
 
         provider_model = pm.to_string();
         base_url = provider.base_url().trim_end_matches('/').to_string();
+        anthropic_url = provider.anthropic_base_url().trim_end_matches('/').to_string();
         api_key = provider.api_key.clone();
     }
     client = state.http_client.clone();
 
+    // Anthropic passthrough: convert Responses → Anthropic Messages, forward directly
+    if !anthropic_url.is_empty() {
+        let anthropic_req = convert::responses_to_anthropic(&req, &provider_model);
+        let upstream_url = format!("{anthropic_url}/v1/messages");
+
+        let stream_result = client
+            .post(&upstream_url)
+            .header("x-api-key", &api_key)
+            .header("Content-Type", "application/json")
+            .header("anthropic-version", "2023-06-01")
+            .json(&anthropic_req)
+            .send()
+            .await;
+
+        let response = match stream_result {
+            Ok(r) => r,
+            Err(e) => {
+                error!("Codex 上游请求失败: {e}");
+                return (
+                    StatusCode::BAD_GATEWAY,
+                    Json(serde_json::json!({
+                        "error": {"message": format!("上游服务连接失败: {e}"), "type": "api_error"}
+                    })),
+                )
+                    .into_response();
+            }
+        };
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_default();
+            return (
+                StatusCode::BAD_GATEWAY,
+                Json(serde_json::json!({
+                    "error": {"message": format!("上游返回 {status}: {error_body}"), "type": "api_error"}
+                })),
+            )
+                .into_response();
+        }
+
+        let mut stream = response.bytes_stream();
+        let model_name = provider_model;
+
+        let body_stream = async_stream::stream! {
+            let mut responses_converter = convert::ResponsesSseConverter::new(&model_name);
+
+            if let Some(init) = responses_converter.ensure_init() {
+                yield Ok::<_, std::convert::Infallible>(init);
+            }
+
+            let mut buffer = String::new();
+
+            while let Some(chunk) = futures::StreamExt::next(&mut stream).await {
+                match chunk {
+                    Ok(bytes) => {
+                        let text = String::from_utf8_lossy(&bytes);
+                        buffer.push_str(&text);
+
+                        while let Some(line_end) = buffer.find('\n') {
+                            let line = buffer[..line_end].trim().to_string();
+                            buffer = buffer[line_end + 1..].to_string();
+
+                            if line.is_empty() || line.starts_with(':') {
+                                continue;
+                            }
+
+                            if let Some(data) = line.strip_prefix("data: ") {
+                                let events = responses_converter.convert_anthropic_event(data);
+                                for event in events {
+                                    yield Ok(event);
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("Codex SSE 读取错误: {e}");
+                        break;
+                    }
+                }
+            }
+        };
+
+        let stream = tokio_stream::StreamExt::map(body_stream, |item| match item {
+            Ok(s) => Ok::<_, std::convert::Infallible>(s),
+        });
+
+        return Response::builder()
+            .status(StatusCode::OK)
+            .header("Content-Type", "text/event-stream")
+            .header("Cache-Control", "no-cache")
+            .header("Connection", "keep-alive")
+            .body(Body::from_stream(stream))
+            .unwrap()
+            .into_response();
+    }
+
+    // OpenAI conversion fallback
     let chat_url = format!("{base_url}/chat/completions");
     let chat_req = convert::responses_to_chat(&req, &provider_model);
 
@@ -443,7 +541,6 @@ async fn handle_responses(
                                     for choice in choices {
                                         let anthropic_events = converter.process_choice(choice);
                                         for event in &anthropic_events {
-                                            // event is "event: <type>\ndata: <json>\n\n" — extract data line
                                             for line in event.lines() {
                                                 if let Some(json) = line.strip_prefix("data: ") {
                                                     let resp_events = responses_converter.convert_anthropic_event(json);
@@ -552,6 +649,7 @@ async fn handle_admin_get_config(State(state): State<SharedState>) -> Json<Value
             "display_name": p.display_name,
             "has_key": !p.api_key.is_empty(),
             "base_url": p.base_url(),
+            "anthropic_base_url": p.anthropic_base_url(),
             "models": p.models,
         });
         if !p.api_key.is_empty() {
@@ -600,6 +698,9 @@ async fn handle_admin_update_config(
                     if !url.is_empty() {
                         provider.base_url = Some(url.to_string());
                     }
+                }
+                if let Some(url) = p_data.get("anthropic_base_url").and_then(|v| v.as_str()) {
+                    provider.anthropic_base_url = if url.is_empty() { None } else { Some(url.to_string()) };
                 }
                 if let Some(models) = p_data.get("models").and_then(|v| v.as_array()) {
                     provider.models = models
@@ -661,6 +762,11 @@ async fn handle_admin_create_provider(
         .get("base_url")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
+    let anthropic_base_url = body
+        .get("anthropic_base_url")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
     let models: Vec<String> = body
         .get("models")
         .and_then(|v| v.as_array())
@@ -673,7 +779,7 @@ async fn handle_admin_create_provider(
             display_name,
             api_key,
             base_url,
-            anthropic_base_url: None,
+            anthropic_base_url,
             models,
         },
     );
