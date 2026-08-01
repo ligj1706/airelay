@@ -374,7 +374,7 @@ async function saveCurrent(){
   const modelsEl = document.getElementById('cfgModels');
   const keyVal = keyEl.value.trim();
   const urlVal = urlEl.value.trim();
-  const models = modelsEl.value.split(',').map(s=>s.trim()).filter(s=>s);
+  const models = modelsEl.value.split(/[,，]/).map(s=>s.trim()).filter(s=>s);
 
   const body = { default: state.default, providers: { [id]: { api_key: keyVal||'', base_url: urlVal, models: models } } };
 
@@ -393,7 +393,7 @@ async function saveAll(){
       const keyVal = document.getElementById('cfgApiKey').value.trim();
       const urlVal = document.getElementById('cfgBaseUrl').value.trim();
       const modelsRaw = document.getElementById('cfgModels').value;
-      const models = modelsRaw.split(',').map(s=>s.trim()).filter(s=>s);
+      const models = modelsRaw.split(/[,，]/).map(s=>s.trim()).filter(s=>s);
       body.providers[id] = { api_key: keyVal||'', base_url: urlVal, models: models };
     } else {
       body.providers[id] = { models: state.providers[id].models };
@@ -437,7 +437,7 @@ async function doCreateProvider(){
   const dn = document.getElementById('newDisplayName').value.trim();
   const url = document.getElementById('newBaseUrl').value.trim();
   const key = document.getElementById('newApiKey').value.trim();
-  const models = document.getElementById('newModels').value.split(',').map(s=>s.trim()).filter(s=>s);
+  const models = document.getElementById('newModels').value.split(/[,，]/).map(s=>s.trim()).filter(s=>s);
   if(!id){ showMsg('createMsg','err','Provider ID 不能为空'); return; }
   showMsg('createMsg','ok','创建中…');
   const r = await fetch('/admin/api/provider', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,display_name:dn||id,base_url:url,api_key:key,models:models})});
