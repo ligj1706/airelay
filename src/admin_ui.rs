@@ -76,6 +76,13 @@ textarea:focus{border-color:var(--focus);box-shadow:0 0 0 3px var(--focus-ring)}
 .btn-danger:hover{opacity:0.85}
 .btn-sm{padding:4px 10px;font-size:11px}
 
+.toggle{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:24px;transition:.2s}
+.toggle-slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s}
+.toggle input:checked+.toggle-slider{background:var(--focus)}
+.toggle input:checked+.toggle-slider:before{transform:translateX(20px)}
+
 .form-row{display:flex;gap:8px;align-items:flex-end}
 .form-row .field{flex:1}
 .field{margin-bottom:12px}
@@ -142,6 +149,24 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
   </div>
 </div>
 
+<!-- Auto-start Toggle -->
+<div class="section">
+  <div class="section-title">系统</div>
+  <div class="card">
+    <div class="flex-between">
+      <div>
+        <div style="font-size:13px;font-weight:500">开机自启</div>
+        <div class="hint">登录时自动启动 airelay（macOS）</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="autostartToggle" onchange="toggleAutostart()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="msg mt-8" id="autostartMsg"></div>
+  </div>
+</div>
+
 <!-- Provider Configuration -->
 <div class="section">
   <div class="section-title">配置提供商</div>
@@ -175,7 +200,7 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
 
     <div id="configForm" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
       <div class="field">
-        <label>API Key <a href="#" id="cfgApiKeyUrl" target="_blank" style="font-weight:400;font-size:10px;color:var(--focus);text-decoration:none;margin-left:8px">获取 Key →</a></label>
+        <label>API Key <a href="#" id="cfgApiKeyUrl" target="_blank" style="font-weight:500;font-size:12px;color:var(--focus);text-decoration:none;margin-left:8px;border-bottom:1px dashed var(--focus);padding-bottom:1px">申请 Key →</a></label>
         <input type="password" id="cfgApiKey" placeholder="sk-xxxxxxxx" autocomplete="off">
         <div class="hint" id="cfgKeyHint"></div>
       </div>
@@ -384,7 +409,7 @@ async function saveAll(){
       const models = modelsRaw.split(',').map(s=>s.trim()).filter(s=>s);
       body.providers[id] = { api_key: keyVal||'', base_url: urlVal, models: models };
     } else {
-      body.providers[id] = { api_key: '', base_url: '', models: state.providers[id].models };
+      body.providers[id] = { models: state.providers[id].models };
     }
   }
   const r = await fetch('/admin/api/config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -450,6 +475,28 @@ function showMsg(id,type,text){
   setTimeout(()=>{el.className='msg'}, 4000);
 }
 
+async function loadAutostart(){
+  try{
+    const r = await fetch('/admin/api/autostart');
+    const d = await r.json();
+    document.getElementById('autostartToggle').checked = d.enabled;
+  }catch(e){}
+}
+
+async function toggleAutostart(){
+  const enable = document.getElementById('autostartToggle').checked;
+  try{
+    const r = await fetch('/admin/api/autostart', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enable})});
+    const d = await r.json();
+    if(d.ok){
+      showMsg('autostartMsg','ok', enable ? '开机自启已启用' : '开机自启已关闭');
+    }
+  }catch(e){
+    showMsg('autostartMsg','err','操作失败');
+    document.getElementById('autostartToggle').checked = !enable;
+  }
+}
+
 initTheme();
 
 document.getElementById('activeProvider').addEventListener('change', onActiveProviderChange);
@@ -457,6 +504,7 @@ document.getElementById('activeModel').addEventListener('change', saveDefault);
 document.getElementById('configProvider').addEventListener('change', onConfigProviderChange);
 
 load();
+loadAutostart();
 setInterval(async()=>{
   try{
     const r = await fetch('/health');

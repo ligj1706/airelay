@@ -187,7 +187,29 @@ pub fn resolve_model<'a>(config: &'a Config, model_name: &'a str) -> (&'a str, &
         if config.providers.contains_key(provider) {
             return (provider, model, model_name);
         }
+        // provider/model format with unknown provider — don't fallback, let caller error
+        return (provider, model, model_name);
     }
+
+    let default_provider = config.providers.get(&config.default.provider);
+    if let Some(p) = default_provider {
+        if p.models.iter().any(|m| m == model_name) {
+            return (&config.default.provider, model_name, model_name);
+        }
+    }
+
+    for (pid, p) in &config.providers {
+        if p.models.iter().any(|m| m == model_name) {
+            return (pid, model_name, model_name);
+        }
+    }
+
+    tracing::warn!(
+        "模型 '{}' 未匹配任何已知 provider/model，fallback 到默认 {}/{}",
+        model_name,
+        config.default.provider,
+        config.default.model
+    );
 
     (
         &config.default.provider,

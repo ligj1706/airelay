@@ -31,21 +31,20 @@ Codex CLI  ── OpenAI Responses ────▶                          ▶ 
 ### 1. 安装
 
 ```bash
-# 一行安装 (macOS / Linux)
+# 一行安装 — 自动完成: 二进制 + PATH + 别名 + (可选)开机自启
 curl -fsSL https://raw.githubusercontent.com/ligj1706/airelay/main/install.sh | bash
 
 # 或者从源码编译（需要 Rust 环境）
 git clone https://github.com/ligj1706/airelay.git
 cd airelay && cargo build --release
+cp target/release/airelay ~/.local/bin/
 ```
 
 ### 2. 启动
 
 ```bash
-airelay
-# 代理启动于 http://127.0.0.1:8082
-# 管理界面 http://127.0.0.1:8082/admin
-# macOS 菜单栏出现托盘图标
+ar          # 启动代理 (macOS 菜单栏出现托盘图标)
+            # 如果已运行则提示 "airelay 已运行"，不会重复启动
 ```
 
 ### 3. 配置
@@ -57,18 +56,17 @@ airelay
 3. 点击「测试连接」
 4. 保存
 
-### 4. 启动 Claude Code
+### 4. 启动 AI 编程工具
 
 ```bash
+# Claude Code (走 airelay 代理)
 ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
+
+# Codex CLI (走 airelay 代理)
+OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex
 ```
 
-或者配置 shell 别名:
-
-```bash
-alias ar="airelay &"
-alias cc="ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude"
-```
+提示：如果常用，可以在 shell 配置中添加别名。
 
 在 Claude Code 中切换模型：
 
@@ -77,12 +75,20 @@ alias cc="ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any clau
 /model kimi/kimi-k3
 ```
 
+### 5. 开机自启（可选）
+
+```bash
+airelay-autostart on      # 启用开机自启
+airelay-autostart off     # 关闭
+airelay-autostart status  # 查看状态
+```
+
 ## 功能特性
 
 - **协议转换** — 完整 Anthropic Messages ↔ OpenAI Chat Completions，以及 OpenAI Responses（Codex）
 - **SSE 流式** — 实时流转换，支持 thinking/reasoning、tool_use 和 token 用量追踪
 - **9 个预设提供商** — DeepSeek、Kimi、GLM、MiniMax、Qwen、OpenAI、Ollama、LM Studio，以及自定义
-- **Web 管理界面** — 下拉配置，暗色/亮色主题，Anthropic 暖色风格
+- **Web 管理界面** — 下拉配置，API Key 申请链接一键跳转，暗色/亮色主题，开机自启开关
 - **热加载** — Admin UI / CLI / 托盘任何方式修改配置，即时生效
 - **macOS 托盘** — 菜单栏图标，一键切换模型、打开管理界面、退出
 - **CLI 命令行** — `airelay switch <provider/model>`、`airelay list`、`airelay status`
@@ -127,6 +133,7 @@ airelay switch deepseek/deepseek-v4-pro   # 热加载切换默认模型
 | `/admin/api/provider` | POST | 新增提供商 |
 | `/admin/api/provider/{id}` | DELETE | 删除提供商 |
 | `/admin/api/test` | POST | 测试提供商连接 |
+| `/admin/api/autostart` | GET/POST | 查看/设置开机自启 |
 
 ## 技术栈
 

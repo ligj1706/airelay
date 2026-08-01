@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::process::Command;
 use std::sync::{Arc, RwLock};
 
 use axum::body::Body;
@@ -53,6 +54,8 @@ pub fn build_router(state: SharedState) -> Router {
         .route("/admin/api/provider", post(handle_admin_create_provider))
         .route("/admin/api/provider/{id}", axum::routing::delete(handle_admin_delete_provider))
         .route("/admin/api/test", post(handle_admin_test))
+        .route("/admin/api/autostart", get(handle_admin_get_autostart))
+        .route("/admin/api/autostart", post(handle_admin_toggle_autostart))
         .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
         .with_state(state)
 }
@@ -88,7 +91,10 @@ async fn handle_messages(
                     StatusCode::BAD_REQUEST,
                     Json(anthropic_error(
                         "invalid_request_error",
-                        &format!("未知 provider: {pid}"),
+                        &format!(
+                            "未知 provider: {pid}。已知 provider: {}",
+                            config.providers.keys().cloned().collect::<Vec<_>>().join(", ")
+                        ),
                     )),
                 )
                     .into_response();
@@ -96,11 +102,14 @@ async fn handle_messages(
         };
 
         if provider.api_key.is_empty() {
+            let admin_port = config.server.port;
             return (
                 StatusCode::BAD_REQUEST,
                 Json(anthropic_error(
                     "invalid_request_error",
-                    &format!("Provider {pid} 未配置 API Key，请在 Admin UI 中配置"),
+                    &format!(
+                        "Provider '{pid}' 未配置 API Key。请在浏览器打开 http://127.0.0.1:{admin_port}/admin 配置，或运行 airelay 后点击托盘图标→打开管理界面"
+                    ),
                 )),
             )
                 .into_response();
@@ -250,7 +259,10 @@ async fn handle_responses(
                 return (
                     StatusCode::BAD_REQUEST,
                     Json(serde_json::json!({
-                        "error": {"message": format!("未知 provider: {provider_id}"), "type": "invalid_request_error"}
+                        "error": {
+                            "message": format!("未知 provider: {provider_id}"),
+                            "type": "invalid_request_error"
+                        }
                     })),
                 )
                     .into_response();
@@ -258,10 +270,14 @@ async fn handle_responses(
         };
 
         if provider.api_key.is_empty() {
+            let admin_port = config.server.port;
             return (
                 StatusCode::BAD_REQUEST,
                 Json(serde_json::json!({
-                    "error": {"message": format!("Provider {provider_id} 未配置 API Key")}
+                    "error": {
+                        "message": format!("Provider '{provider_id}' 未配置 API Key。请在浏览器打开 http://127.0.0.1:{admin_port}/admin 配置"),
+                        "type": "invalid_request_error"
+                    }
                 })),
             )
                 .into_response();
@@ -350,10 +366,13 @@ async fn handle_responses(
                                     for choice in choices {
                                         let anthropic_events = converter.process_choice(choice);
                                         for event in &anthropic_events {
-                                            if let Some(json) = event.strip_prefix("data: ") {
-                                                let resp_events = responses_converter.convert_anthropic_event(json);
-                                                for re in resp_events {
-                                                    yield Ok(re);
+                                            // event is "event: <type>\ndata: <json>\n\n" — extract data line
+                                            for line in event.lines() {
+                                                if let Some(json) = line.strip_prefix("data: ") {
+                                                    let resp_events = responses_converter.convert_anthropic_event(json);
+                                                    for re in resp_events {
+                                                        yield Ok(re);
+                                                    }
                                                 }
                                             }
                                         }
@@ -392,22 +411,46 @@ async fn handle_models(State(state): State<SharedState>) -> Json<Value> {
     let mut models = Vec::new();
 
     for (provider_id, provider) in &config.providers {
-        if provider.api_key.is_empty() {
-            continue;
-        }
+        let ready = !provider.api_key.is_empty();
         for model in &provider.models {
             models.push(serde_json::json!({
                 "id": format!("{provider_id}/{model}"),
                 "object": "model",
                 "created": 0,
                 "owned_by": provider.display_name,
+                "display_name": format!("{} / {}", provider.display_name, model),
+                "ready": ready,
             }));
         }
     }
 
+    // Also add the raw model names (without provider prefix) for broad compatibility
+    for (_provider_id, provider) in &config.providers {
+        for model in &provider.models {
+            models.push(serde_json::json!({
+                "id": model,
+                "object": "model",
+                "created": 0,
+                "owned_by": provider.display_name,
+                "display_name": format!("{} / {}", provider.display_name, model),
+                "ready": !provider.api_key.is_empty(),
+            }));
+        }
+    }
+
+    // Deduplicate by id
+    let mut seen = std::collections::HashSet::new();
+    let unique: Vec<Value> = models
+        .into_iter()
+        .filter(|m| {
+            let id = m.get("id").and_then(|v| v.as_str()).unwrap_or("");
+            seen.insert(id.to_string())
+        })
+        .collect();
+
     Json(serde_json::json!({
         "object": "list",
-        "data": models
+        "data": unique
     }))
 }
 
@@ -703,6 +746,66 @@ async fn handle_admin_test(
             "error": format!("连接失败: {e}")
         })),
     }
+}
+
+// ==================== Auto-start (macOS LaunchAgent) ====================
+
+fn autostart_plist_path() -> Option<PathBuf> {
+    let home = dirs::home_dir()?;
+    Some(home.join("Library/LaunchAgents/com.airelay.proxy.plist"))
+}
+
+fn autostart_binary_path() -> String {
+    std::env::current_exe()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|_| {
+            let home = dirs::home_dir()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_default();
+            format!("{home}/.local/bin/airelay")
+        })
+}
+
+async fn handle_admin_get_autostart() -> Json<Value> {
+    let enabled = autostart_plist_path().map(|p| p.exists()).unwrap_or(false);
+    Json(serde_json::json!({ "enabled": enabled }))
+}
+
+async fn handle_admin_toggle_autostart(Json(body): Json<Value>) -> Result<Json<Value>, StatusCode> {
+    let enable = body.get("enable").and_then(|v| v.as_bool()).unwrap_or(false);
+    let plist_path = autostart_plist_path().ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if enable {
+        let binary = autostart_binary_path();
+        let plist = format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+    <key>Label</key><string>com.airelay.proxy</string>
+    <key>ProgramArguments</key><array><string>{binary}</string></array>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>StandardOutPath</key><string>/tmp/airelay.stdout.log</string>
+    <key>StandardErrorPath</key><string>/tmp/airelay.stderr.log</string>
+</dict></plist>"#
+        );
+        if let Some(parent) = plist_path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        std::fs::write(&plist_path, &plist).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        let _ = Command::new("launchctl")
+            .args(["load", &plist_path.to_string_lossy()])
+            .output();
+        info!("开机自启已启用");
+    } else {
+        let _ = Command::new("launchctl")
+            .args(["unload", &plist_path.to_string_lossy()])
+            .output();
+        let _ = std::fs::remove_file(&plist_path);
+        info!("开机自启已关闭");
+    }
+
+    Ok(Json(serde_json::json!({ "ok": true, "enabled": enable })))
 }
 
 // ==================== Helpers ====================

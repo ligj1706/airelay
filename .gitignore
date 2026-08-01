@@ -6,3 +6,6 @@
 .idea/
 .vscode/
 *.tmp
+.env
+config.toml
+*.local.toml

@@ -31,21 +31,20 @@ Codex CLI  ── OpenAI Responses ────▶                          ▶ 
 ### 1. Install
 
 ```bash
-# One-liner (macOS / Linux)
+# One-liner — auto-installs binary + PATH + aliases + optional auto-start
 curl -fsSL https://raw.githubusercontent.com/ligj1706/airelay/main/install.sh | bash
 
 # Or from source (requires Rust)
 git clone https://github.com/ligj1706/airelay.git
 cd airelay && cargo build --release
+cp target/release/airelay ~/.local/bin/
 ```
 
 ### 2. Run
 
 ```bash
-airelay
-# Starts proxy on http://127.0.0.1:8082
-# Admin UI at http://127.0.0.1:8082/admin
-# Menu bar tray icon on macOS
+ar          # Start proxy (menu bar tray icon on macOS)
+            # Shows "airelay 已运行" if already running
 ```
 
 ### 3. Configure
@@ -57,18 +56,17 @@ Open `http://127.0.0.1:8082/admin` (or click tray icon → Open Admin):
 3. Click Test Connection
 4. Save
 
-### 4. Launch Claude Code
+### 4. Launch AI Coding Tools
 
 ```bash
+# Claude Code (via airelay proxy)
 ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
+
+# Codex CLI (via airelay proxy)
+OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex
 ```
 
-Or with shell aliases:
-
-```bash
-alias ar="airelay &"
-alias cc="ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude"
-```
+Tip: add aliases to your shell config if you use these often.
 
 Switch models inside Claude Code:
 
@@ -77,12 +75,20 @@ Switch models inside Claude Code:
 /model kimi/kimi-k3
 ```
 
+### 5. Auto-start (optional)
+
+```bash
+airelay-autostart on      # Enable launch-on-login
+airelay-autostart off     # Disable
+airelay-autostart status  # Check status
+```
+
 ## Features
 
 - **Protocol translation** — Full Anthropic Messages ↔ OpenAI Chat Completions, plus OpenAI Responses (Codex)
 - **SSE streaming** — Real-time stream conversion with thinking/reasoning, tool use, and token usage tracking
 - **9 built-in providers** — DeepSeek, Kimi, GLM, MiniMax, Qwen, OpenAI, Ollama, LM Studio, plus custom
-- **Web Admin UI** — Dropdown config, dark/light theme, Anthropic-inspired warm palette
+- **Web Admin UI** — Dropdown config, one-click API key links, dark/light theme, auto-start toggle
 - **Hot reload** — Config changes via Admin UI, CLI, or tray take effect immediately
 - **macOS tray** — Menu bar icon with model switching, config access, and graceful quit
 - **CLI** — `airelay switch <provider/model>`, `airelay list`, `airelay status`
@@ -127,6 +133,7 @@ airelay switch deepseek/deepseek-v4-pro   # Hot-switch default model
 | `/admin/api/provider` | POST | Add provider |
 | `/admin/api/provider/{id}` | DELETE | Remove provider |
 | `/admin/api/test` | POST | Test provider connection |
+| `/admin/api/autostart` | GET/POST | Get/set auto-start on login |
 
 ## Tech Stack
 

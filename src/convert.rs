@@ -144,6 +144,8 @@ pub struct OpenAIChatRequest {
     pub reasoning_effort: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stream_options: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stop: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -395,13 +397,14 @@ pub fn anthropic_to_openai(req: &MessagesRequest, provider_model: &str) -> OpenA
     OpenAIChatRequest {
         model: provider_model.to_string(),
         messages: openai_messages,
-        max_tokens: Some(req.max_tokens),
+        max_tokens: Some(req.max_tokens.min(32768)),
         temperature: req.temperature,
         top_p: req.top_p,
         stream: true,
         tools: openai_tools,
         reasoning_effort,
         stream_options: Some(serde_json::json!({"include_usage": true})),
+        stop: req.stop_sequences.clone(),
     }
 }
 
@@ -478,7 +481,35 @@ fn convert_blocks_to_openai(role: &str, blocks: &[ContentBlock]) -> Option<OpenA
             ContentBlock::RedactedThinking { .. } => {
                 // Skip redacted thinking — no content to forward
             }
-            _ => {}
+            ContentBlock::ServerToolUse { id, name, input } => {
+                tool_calls.push(OpenAIToolCall {
+                    id: id.clone(),
+                    call_type: "function".into(),
+                    function: OpenAIFunctionCall {
+                        name: name.clone(),
+                        arguments: serde_json::to_string(input).unwrap_or_default(),
+                    },
+                });
+            }
+            ContentBlock::WebSearchToolResult { content } => {
+                let search_text = match &content {
+                    Value::String(s) => s.clone(),
+                    Value::Array(arr) => arr
+                        .iter()
+                        .filter_map(|v| {
+                            v.get("text")
+                                .or(v.get("snippet"))
+                                .or(v.get("title"))
+                                .and_then(|t| t.as_str())
+                        })
+                        .collect::<Vec<_>>()
+                        .join("\n"),
+                    _ => serde_json::to_string(&content).unwrap_or_default(),
+                };
+                if !search_text.is_empty() {
+                    text_parts.push(format!("[网页搜索结果]\n{search_text}"));
+                }
+            }
         }
     }
 
@@ -629,7 +660,8 @@ impl SseConverter {
                         "index": self.current_thinking_index,
                         "content_block": {
                             "type": "thinking",
-                            "thinking": ""
+                            "thinking": "",
+                            "signature": ""
                         }
                     })
                 ));
@@ -641,7 +673,8 @@ impl SseConverter {
                     "index": self.current_thinking_index,
                     "delta": {
                         "type": "thinking_delta",
-                        "thinking": think
+                        "thinking": think,
+                        "signature": ""
                     }
                 })
             ));
@@ -1069,13 +1102,14 @@ pub fn responses_to_chat(req: &ResponsesRequest, provider_model: &str) -> OpenAI
     OpenAIChatRequest {
         model: provider_model.to_string(),
         messages,
-        max_tokens: req.max_output_tokens,
+        max_tokens: req.max_output_tokens.map(|t| t.min(32768)),
         temperature: req.temperature,
         top_p: None,
         stream: true,
         tools: openai_tools,
         reasoning_effort: None,
         stream_options: Some(serde_json::json!({"include_usage": true})),
+        stop: None,
     }
 }
 
