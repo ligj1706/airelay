@@ -23,24 +23,28 @@ models = ["deepseek-v4-pro", "deepseek-v4-flash"]
 display_name = "Kimi"
 api_key = ""
 base_url = "https://api.moonshot.cn/v1"
+anthropic_base_url = "https://api.moonshot.cn/anthropic"
 models = ["kimi-k3", "kimi-k2.6", "kimi-k2.7-code"]
 
 [providers.glm]
 display_name = "智谱 GLM"
 api_key = ""
 base_url = "https://open.bigmodel.cn/api/paas/v4"
+anthropic_base_url = "https://open.bigmodel.cn/api/anthropic"
 models = ["glm-5.2", "glm-5.1", "glm-4.7-flash"]
 
 [providers.minimax]
 display_name = "MiniMax"
 api_key = ""
 base_url = "https://api.minimax.chat/v1"
+anthropic_base_url = "https://api.minimax.io/anthropic"
 models = ["MiniMax-M3", "MiniMax-M2.7"]
 
 [providers.qwen]
 display_name = "阿里百炼 Qwen"
 api_key = ""
 base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+anthropic_base_url = "https://dashscope.aliyuncs.com/apps/anthropic"
 models = ["qwen3-coder-next", "qwen3-coder-plus", "qwen3.7-max"]
 
 [providers.openai]

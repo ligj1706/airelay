@@ -67,7 +67,7 @@ impl Default for Config {
                 display_name: "Kimi".into(),
                 api_key: String::new(),
                 base_url: Some("https://api.moonshot.cn/v1".into()),
-                anthropic_base_url: None,
+                anthropic_base_url: Some("https://api.moonshot.cn/anthropic".into()),
                 models: vec!["kimi-k3".into(), "kimi-k2.6".into(), "kimi-k2.7-code".into()],
             },
         );
@@ -78,7 +78,7 @@ impl Default for Config {
                 display_name: "智谱 GLM".into(),
                 api_key: String::new(),
                 base_url: Some("https://open.bigmodel.cn/api/paas/v4".into()),
-                anthropic_base_url: None,
+                anthropic_base_url: Some("https://open.bigmodel.cn/api/anthropic".into()),
                 models: vec!["glm-5.2".into(), "glm-5.1".into(), "glm-4.7-flash".into()],
             },
         );
@@ -89,7 +89,7 @@ impl Default for Config {
                 display_name: "MiniMax".into(),
                 api_key: String::new(),
                 base_url: Some("https://api.minimax.chat/v1".into()),
-                anthropic_base_url: None,
+                anthropic_base_url: Some("https://api.minimax.io/anthropic".into()),
                 models: vec!["MiniMax-M3".into(), "MiniMax-M2.7".into()],
             },
         );
@@ -100,7 +100,7 @@ impl Default for Config {
                 display_name: "阿里百炼 Qwen".into(),
                 api_key: String::new(),
                 base_url: Some("https://dashscope.aliyuncs.com/compatible-mode/v1".into()),
-                anthropic_base_url: None,
+                anthropic_base_url: Some("https://dashscope.aliyuncs.com/apps/anthropic".into()),
                 models: vec!["qwen3-coder-next".into(), "qwen3-coder-plus".into(), "qwen3.7-max".into()],
             },
         );
