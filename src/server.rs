@@ -131,12 +131,27 @@ async fn handle_messages(
             req.model, provider_id, provider_model, upstream_url
         );
 
+        // Replace model name in body to strip provider/ prefix
+        let body_obj: Value = match serde_json::from_str::<Value>(&body) {
+            Ok(mut v) => {
+                v["model"] = Value::String(provider_model.clone());
+                v
+            }
+            Err(_) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(anthropic_error("invalid_request_error", "请求体解析失败")),
+                )
+                    .into_response();
+            }
+        };
+
         let stream_result = client
             .post(&upstream_url)
             .header("x-api-key", &api_key)
             .header("Content-Type", "application/json")
             .header("anthropic-version", "2023-06-01")
-            .body(body)
+            .json(&body_obj)
             .send()
             .await;
 

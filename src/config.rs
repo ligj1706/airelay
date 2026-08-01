@@ -166,7 +166,26 @@ impl Default for Config {
 pub fn load_or_create_config(path: &Path) -> RwLock<Config> {
     match fs::read_to_string(path) {
         Ok(content) => {
-            let cfg: Config = toml::from_str(&content).unwrap_or_default();
+            let mut cfg: Config = toml::from_str(&content).unwrap_or_default();
+            // Migrate: fill missing anthropic_base_url from defaults
+            let defaults = Config::default();
+            let mut migrated = false;
+            for (id, provider) in cfg.providers.iter_mut() {
+                if provider.anthropic_base_url.is_none() {
+                    if let Some(d) = defaults.providers.get(id) {
+                        if d.anthropic_base_url.is_some() {
+                            provider.anthropic_base_url = d.anthropic_base_url.clone();
+                            migrated = true;
+                        }
+                    }
+                }
+            }
+            if migrated {
+                if let Ok(toml_str) = toml::to_string_pretty(&cfg) {
+                    let _ = fs::write(path, &toml_str);
+                    info!("已迁移配置: 补充 anthropic_base_url");
+                }
+            }
             info!("加载配置: {}", path.display());
             RwLock::new(cfg)
         }
