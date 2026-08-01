@@ -1,106 +1,106 @@
 # airelay
 
-[中文](README_CN.md)
+[English](README_EN.md)
 
-Protocol relay for AI coding tools. Use any LLM with Claude Code or Codex CLI.
+AI 编程工具的协议中继。让 Claude Code / Codex CLI 使用任意大模型 API。
 
-**3.0 MB single binary. Starts in milliseconds. Zero runtime dependencies. macOS menu bar app.**
+**3.0 MB 单文件二进制，启动几十毫秒，零外部运行时依赖。macOS 菜单栏托盘常驻。**
 
-## Supported Platforms
+## 支持平台
 
-| Platform | Status |
-|----------|--------|
-| macOS (Apple Silicon) | Full support — binary + tray |
-| macOS (Intel) | Full support — binary + tray |
-| Linux (x86_64) | CLI + server (no tray) |
-| Windows | CLI + server (tray untested) |
+| 平台 | 状态 |
+|------|------|
+| macOS (Apple Silicon) | 完整支持 — 二进制 + 托盘 |
+| macOS (Intel) | 完整支持 — 二进制 + 托盘 |
+| Linux (x86_64) | CLI + 服务器（无托盘） |
+| Windows | CLI + 服务器（托盘未验证） |
 
-## What it does
+## 解决什么问题
 
-Claude Code requires Anthropic's Claude models (paid subscription). Codex CLI requires OpenAI models.
+Claude Code 默认只能用 Anthropic 官方的 Claude 模型（需要付费订阅）。Codex CLI 默认只能用 OpenAI 的模型。
 
-airelay runs a local HTTP proxy that translates API protocols on the fly — Anthropic Messages ↔ OpenAI Chat Completions, OpenAI Responses ↔ Chat — so you can use DeepSeek, Kimi, GLM, Qwen, Ollama, or any OpenAI-compatible API with your favorite AI coding tools.
+airelay 在本地启动一个 HTTP 代理服务器，实时翻译 API 协议 — Anthropic Messages ↔ OpenAI Chat Completions、OpenAI Responses ↔ Chat — 让你可以用 DeepSeek、Kimi、GLM、Qwen、Ollama 或任何兼容 OpenAI 的 API 来驱动你常用的 AI 编程工具。
 
 ```
 Claude Code ── Anthropic Messages ──▶ airelay ── OpenAI Chat ──▶ DeepSeek / Kimi / ...
 Codex CLI  ── OpenAI Responses ────▶                          ▶ Ollama / LM Studio / ...
 ```
 
-## Quick Start
+## 快速开始
 
-### 1. Install
+### 1. 安装
 
 ```bash
-# One-liner — auto-installs binary + PATH + aliases + optional auto-start
+# 一行安装 — 自动完成: 二进制 + PATH + 别名 + (可选)开机自启
 curl -fsSL https://raw.githubusercontent.com/ligj1706/airelay/main/install.sh | bash
 
-# Or from source (requires Rust)
+# 或者从源码编译（需要 Rust 环境）
 git clone https://github.com/ligj1706/airelay.git
 cd airelay && cargo build --release
 cp target/release/airelay ~/.local/bin/
 ```
 
-### 2. Run
+### 2. 启动
 
 ```bash
-ar          # Start proxy (menu bar tray icon on macOS)
-            # Prints "airelay is running" if already started
+ar          # 启动代理 (macOS 菜单栏出现托盘图标)
+            # 如果已运行则提示 "airelay 已运行"，不会重复启动
 ```
 
-### 3. Configure
+### 3. 配置
 
-Open `http://127.0.0.1:8082/admin` (or click tray icon → Open Admin):
+浏览器打开 `http://127.0.0.1:8082/admin`（或点击托盘图标 → 打开管理界面）：
 
-1. Select a provider (e.g. DeepSeek)
-2. Enter your API key
-3. Click Test Connection
-4. Save
+1. 选择提供商（如 DeepSeek）
+2. 填入 API Key
+3. 点击「测试连接」
+4. 保存
 
-### 4. Launch AI Coding Tools
+### 4. 启动 AI 编程工具
 
 ```bash
-# Claude Code (via airelay proxy)
+# Claude Code (走 airelay 代理)
 ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
 
-# Codex CLI (via airelay proxy)
+# Codex CLI (走 airelay 代理)
 OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex
 ```
 
-Tip: add aliases to your shell config if you use these often.
+提示：如果常用，可以在 shell 配置中添加别名。
 
-Switch models inside Claude Code:
+在 Claude Code 中切换模型：
 
 ```
 /model deepseek/deepseek-v4-pro
 /model kimi/kimi-k3
 ```
 
-### 5. Auto-start (optional)
+### 5. 开机自启（可选）
 
 ```bash
-airelay-autostart on      # Enable launch-on-login
-airelay-autostart off     # Disable
-airelay-autostart status  # Check status
+airelay-autostart on      # 启用开机自启
+airelay-autostart off     # 关闭
+airelay-autostart status  # 查看状态
 ```
 
-## Features
+## 功能特性
 
-- **Protocol translation** — Full Anthropic Messages ↔ OpenAI Chat Completions, plus OpenAI Responses (Codex)
-- **SSE streaming** — Real-time stream conversion with thinking/reasoning, tool use, and token usage tracking
-- **10 built-in providers** — Anthropic, DeepSeek, Kimi, GLM, MiniMax, Qwen, OpenAI, Ollama, LM Studio, plus custom
-- **Web Admin UI** — Dropdown config, one-click API key links, dark/light theme, auto-start toggle
-- **Hot reload** — Config changes via Admin UI, CLI, or tray take effect immediately
-- **macOS tray** — Menu bar icon with model switching, config access, and graceful quit
-- **CLI** — `airelay switch <provider/model>`, `airelay list`, `airelay status`
-- **Provider CRUD** — Add/remove third-party providers via Admin UI
-- **Streaming usage** — Real output token counts from upstream SSE, shown in Claude Code
-- **Connection pooling** — Shared reqwest client across requests
-- **Graceful shutdown** — Tray quit triggers graceful shutdown, drains in-flight SSE streams
+- **协议转换** — 完整 Anthropic Messages ↔ OpenAI Chat Completions，以及 OpenAI Responses（Codex）
+- **SSE 流式** — 实时流转换，支持 thinking/reasoning、tool_use 和 token 用量追踪
+- **10 个预设提供商** — Anthropic、DeepSeek、Kimi、GLM、MiniMax、Qwen、OpenAI、Ollama、LM Studio，以及自定义
+- **Web 管理界面** — 下拉配置，API Key 申请链接一键跳转，暗色/亮色主题，开机自启开关
+- **热加载** — Admin UI / CLI / 托盘任何方式修改配置，即时生效
+- **macOS 托盘** — 菜单栏图标，一键切换模型、打开管理界面、退出
+- **CLI 命令行** — `airelay switch <provider/model>`、`airelay list`、`airelay status`
+- **提供商增删** — Admin UI 支持新增/删除第三方提供商
+- **流式用量追踪** — 从上游 SSE 实时解析 token 用量，Claude Code 显示真实数字
+- **连接池复用** — reqwest 客户端全局共享
+- **优雅退出** — 托盘退出触发 graceful shutdown，排空进行中的 SSE 流
 
-## Preset Providers
+## 预置提供商
 
-| Provider | Models |
-|----------|--------|
+| Provider | 模型列表 |
+|----------|----------|
 | `anthropic` | claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5 |
 | `deepseek` | deepseek-v4-pro, deepseek-v4-flash |
 | `kimi` | kimi-k3, kimi-k2.6, kimi-k2.7-code |
@@ -112,34 +112,34 @@ airelay-autostart status  # Check status
 | `lmstudio` | auto |
 | `custom` | your-model-name |
 
-## CLI
+## CLI 命令
 
 ```bash
-airelay list                              # List all providers and status
-airelay status                            # Show running state and config
-airelay switch deepseek/deepseek-v4-pro   # Hot-switch default model
+airelay list                              # 列出所有提供商及状态
+airelay status                            # 查看运行状态
+airelay switch deepseek/deepseek-v4-pro   # 热加载切换默认模型
 ```
 
-## API Endpoints
+## API 端点
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/v1/messages` | POST | Claude Code (Anthropic Messages) |
-| `/v1/responses` | POST | Codex CLI (OpenAI Responses) |
-| `/v1/messages/count_tokens` | POST | Token counting |
-| `/v1/models` | GET | Model list |
-| `/health` | GET | Health check |
-| `/admin` | GET | Web Admin UI |
-| `/admin/api/config` | GET/POST | Read/update config |
-| `/admin/api/provider` | POST | Add provider |
-| `/admin/api/provider/{id}` | DELETE | Remove provider |
-| `/admin/api/test` | POST | Test provider connection |
-| `/admin/api/autostart` | GET/POST | Get/set auto-start on login |
+| 端点 | 方法 | 用途 |
+|------|------|------|
+| `/v1/messages` | POST | Claude Code 接入（Anthropic Messages） |
+| `/v1/responses` | POST | Codex CLI 接入（OpenAI Responses） |
+| `/v1/messages/count_tokens` | POST | Token 计数 |
+| `/v1/models` | GET | 模型列表 |
+| `/health` | GET | 健康检查 |
+| `/admin` | GET | Web 管理界面 |
+| `/admin/api/config` | GET/POST | 读取/更新配置 |
+| `/admin/api/provider` | POST | 新增提供商 |
+| `/admin/api/provider/{id}` | DELETE | 删除提供商 |
+| `/admin/api/test` | POST | 测试提供商连接 |
+| `/admin/api/autostart` | GET/POST | 查看/设置开机自启 |
 
-## Tech Stack
+## 技术栈
 
-Rust (edition 2021) — axum 0.8, tokio 1, reqwest 0.12, tray-icon 0.24, tao 0.35, serde + toml.
+Rust (edition 2021) — axum 0.8, tokio 1, reqwest 0.12, tray-icon 0.24, tao 0.35, serde + toml。
 
-## License
+## 许可证
 
 MIT
