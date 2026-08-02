@@ -51,6 +51,21 @@ impl Default for Config {
         let mut providers = BTreeMap::new();
 
         providers.insert(
+            "anthropic".into(),
+            ProviderConfig {
+                display_name: "Anthropic".into(),
+                api_key: String::new(),
+                base_url: Some("https://api.anthropic.com/v1".into()),
+                anthropic_base_url: Some("https://api.anthropic.com".into()),
+                models: vec![
+                    "claude-opus-4-7".into(),
+                    "claude-sonnet-4-6".into(),
+                    "claude-haiku-4-5".into(),
+                ],
+            },
+        );
+
+        providers.insert(
             "deepseek".into(),
             ProviderConfig {
                 display_name: "DeepSeek".into(),

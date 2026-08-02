@@ -25,7 +25,7 @@ airelay 是一款 **AI 编程工具的模型交换机**。核心价值：让 Cla
 个人工具           体验打磨              智能调度              团队基础设施
 
 ✅ 协议转换        📊 用量看板           🧠 自动路由           🏢 团队配置共享
-✅ 9 个提供商      ⚡ 模型测速           🔄 故障转移           📈 用量报表
+✅ 10 个提供商      ⚡ 模型测速           🔄 故障转移           📈 用量报表
 ✅ 托盘 + CLI      🍺 Homebrew           🏠 本地优先           🔐 统一代理
 ✅ Web Admin      📝 请求日志                               
 ✅ 流式 usage     💰 费用估算                              
@@ -59,7 +59,7 @@ main() — 同步入口
 ```
 src/
 ├── main.rs       # 入口：Args 解析 + 子命令分派 + CLI 函数 + run_gui 线程架构
-├── config.rs     # TOML 配置管理，9 个 Provider 预设，配置热保存
+├── config.rs     # TOML 配置管理，10 个 Provider 预设，配置热保存
 ├── convert.rs    # 核心协议转换：Anthropic ↔ OpenAI Chat，Responses ↔ Chat，SSE 流转换
 ├── server.rs     # 所有 HTTP 路由：/v1/messages, /v1/responses, /v1/models, Admin API
 ├── tray.rs       # 系统托盘：macOS 菜单栏图标，模型切换子菜单，管理界面/退出

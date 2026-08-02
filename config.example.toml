@@ -12,6 +12,13 @@ model = "deepseek-v4-flash"
 
 # ==================== 模型提供商（2026年7月最新） ====================
 
+[providers.anthropic]
+display_name = "Anthropic"
+api_key = ""
+base_url = "https://api.anthropic.com/v1"
+anthropic_base_url = "https://api.anthropic.com"
+models = ["claude-opus-4-7", "claude-sonnet-4-6", "claude-haiku-4-5"]
+
 [providers.deepseek]
 display_name = "DeepSeek"
 api_key = ""
