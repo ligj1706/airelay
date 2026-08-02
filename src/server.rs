@@ -183,20 +183,34 @@ async fn handle_messages(
         }
 
         let stream = response.bytes_stream();
+        let upstream_model = provider_model.clone();
         let body_stream = async_stream::stream! {
             let mut stream = Box::pin(stream);
+            let mut buf = String::new();
 
             while let Some(chunk) = futures::StreamExt::next(&mut stream).await {
                 match chunk {
                     Ok(bytes) => {
                         let text = String::from_utf8_lossy(&bytes);
-                        yield Ok::<_, std::convert::Infallible>(text.to_string());
+                        buf.push_str(&text);
+
+                        // Emit complete SSE events (delimited by \n\n)
+                        while let Some(pos) = buf.find("\n\n") {
+                            let event = buf[..pos + 2].to_string();
+                            buf = buf[pos + 2..].to_string();
+
+                            let event = rewrite_message_model(&event, &upstream_model);
+                            yield Ok::<_, std::convert::Infallible>(event);
+                        }
                     }
                     Err(e) => {
                         error!("SSE 读取错误: {e}");
                         break;
                     }
                 }
+            }
+            if !buf.is_empty() {
+                yield Ok::<_, std::convert::Infallible>(buf);
             }
         };
 
@@ -989,6 +1003,19 @@ async fn handle_admin_toggle_autostart(Json(body): Json<Value>) -> Result<Json<V
 }
 
 // ==================== Helpers ====================
+
+fn rewrite_message_model(event: &str, new_model: &str) -> String {
+    if !event.contains("\"type\":\"message_start\"") {
+        return event.to_string();
+    }
+    if let Some(start) = event.find("\"model\":\"") {
+        let prefix_end = start + "\"model\":\"".len();
+        if let Some(end) = event[prefix_end..].find('"') {
+            return format!("{}{new_model}{}", &event[..prefix_end], &event[prefix_end + end..]);
+        }
+    }
+    event.to_string()
+}
 
 fn anthropic_error(error_type: &str, message: &str) -> Value {
     serde_json::json!({
