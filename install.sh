@@ -90,6 +90,22 @@ if ! grep -q "airelay" "$SHELL_RC" 2>/dev/null; then
 # === airelay: AI 模型协议中继 ===
 alias ar='curl -s -o /dev/null http://127.0.0.1:8082/health 2>/dev/null && echo "airelay 已运行" || airelay &'  # 启动代理
 
+# Claude Code 智能启动 — 自动拉起 airelay，用完即走
+cc() {
+  # 如果 airelay 没在跑，后台拉起
+  if ! curl -s http://127.0.0.1:8082/health >/dev/null 2>&1; then
+    printf "→ 启动 airelay..."
+    airelay &
+    # 等它就绪（最多等 3 秒）
+    for i in $(seq 1 30); do
+      curl -s http://127.0.0.1:8082/health >/dev/null 2>&1 && break
+      sleep 0.1
+    done
+    echo " ✓"
+  fi
+  ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude "$@"
+}
+
 # 开机自启管理 (仅 macOS)
 airelay-autostart() {
     local PLIST="$HOME/Library/LaunchAgents/com.airelay.proxy.plist"
@@ -124,7 +140,7 @@ PLISTEOF
 }
 ALIASEOF
     ALIASES_ADDED=1
-    echo "✓ 别名已添加: ar / airelay-autostart"
+    echo "✓ 别名已添加: ar / cc / airelay-autostart"
 fi
 
 echo ""
@@ -132,11 +148,13 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  airelay 安装完成!"
 echo ""
 echo "  用法:"
-echo "    ar                 启动代理 (macOS 菜单栏托盘)"
+echo "    cc                 启动 Claude Code（自动拉起 airelay）"
+echo "    ar                 管理代理 (打开菜单栏托盘)"
 echo ""
-echo "  启动 AI 编程工具 (设置代理环境变量):"
-echo "    ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude"
-echo "    OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex"
+echo "  启动 AI 编程工具:"
+echo "    cc                     Claude Code（推荐，一行搞定）"
+echo "    ar && claude ...       Claude Code（手动两步）"
+echo "    codex                  Codex CLI"
 echo ""
 echo "  开机自启 (macOS):"
 echo "    airelay-autostart on      启用"

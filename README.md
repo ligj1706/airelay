@@ -59,14 +59,17 @@ ar          # 启动代理 (macOS 菜单栏出现托盘图标)
 ### 4. 启动 AI 编程工具
 
 ```bash
-# Claude Code (走 airelay 代理)
+# 推荐：一行搞定，自动拉起 airelay 再启动 Claude Code
+cc
+
+# 或手动指定环境变量
 ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
 
 # Codex CLI (走 airelay 代理)
 OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex
 ```
 
-提示：如果常用，可以在 shell 配置中添加别名。
+`cc` 命令会自动检测 airelay 是否在运行，没有就跑一个后台进程，等它就绪后再启动 Claude Code。不想写代码的时候什么都不用管，零内存占用。
 
 在 Claude Code 中切换模型：
 

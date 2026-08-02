@@ -59,14 +59,17 @@ Open `http://127.0.0.1:8082/admin` (or click tray icon → Open Admin):
 ### 4. Launch AI Coding Tools
 
 ```bash
-# Claude Code (via airelay proxy)
+# Recommended: one command — auto-starts airelay, then launches Claude Code
+cc
+
+# Or manually set env vars
 ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
 
 # Codex CLI (via airelay proxy)
 OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex
 ```
 
-Tip: add aliases to your shell config if you use these often.
+The `cc` command checks if airelay is running, spawns it in the background if needed, waits for it to be ready, then launches Claude Code. Zero memory overhead when you're not coding.
 
 Switch models inside Claude Code:
 
