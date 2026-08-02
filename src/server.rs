@@ -149,6 +149,7 @@ async fn handle_messages(
         let stream_result = client
             .post(&upstream_url)
             .header("x-api-key", &api_key)
+            .header("Authorization", format!("Bearer {api_key}"))
             .header("Content-Type", "application/json")
             .header("anthropic-version", "2023-06-01")
             .json(&body_obj)
@@ -390,6 +391,7 @@ async fn handle_responses(
         let stream_result = client
             .post(&upstream_url)
             .header("x-api-key", &api_key)
+            .header("Authorization", format!("Bearer {api_key}"))
             .header("Content-Type", "application/json")
             .header("anthropic-version", "2023-06-01")
             .json(&anthropic_req)
