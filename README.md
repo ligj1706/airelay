@@ -30,61 +30,56 @@ Codex CLI  ── OpenAI Responses ────▶                          ▶ 
 
 ### 1. 安装
 
+打开终端，粘贴下面这行，回车：
+
 ```bash
-# 一行安装 — 自动完成: 二进制 + PATH + 别名 + (可选)开机自启
 curl -fsSL https://raw.githubusercontent.com/ligj1706/airelay/main/install.sh | bash
-
-# 或者从源码编译（需要 Rust 环境）
-git clone https://github.com/ligj1706/airelay.git
-cd airelay && cargo build --release
-cp target/release/airelay ~/.local/bin/
 ```
 
-### 2. 启动
+安装完成后，**关掉终端重新打开**（或执行 `exec $SHELL`），让 `cc` 和 `ar` 命令生效。
 
-```bash
-ar          # 启动代理 (macOS 菜单栏出现托盘图标)
-            # 如果已运行则提示 "airelay 已运行"，不会重复启动
-```
+> 如果网络有问题，也可以从源码安装（需要 Rust 环境）：
+> ```bash
+> git clone https://github.com/ligj1706/airelay.git
+> cd airelay && cargo build --release
+> cp target/release/airelay ~/.local/bin/
+> ```
 
-### 3. 配置
+### 2. 配置（仅第一次）
 
-浏览器打开 `http://127.0.0.1:8082/admin`（或点击托盘图标 → 打开管理界面）：
+在终端输入 `ar`，菜单栏会出现 airelay 图标。然后浏览器打开 `http://127.0.0.1:8082/admin`（或点击托盘图标 → 打开管理界面）：
 
-1. 选择提供商（如 DeepSeek）
+1. 选择提供商，如 DeepSeek
 2. 填入 API Key
-3. 点击「测试连接」
-4. 保存
+3. 点「测试连接」确认连通
+4. 点「保存」
 
-### 4. 启动 AI 编程工具
+### 3. 开始写代码
 
 ```bash
-# 推荐：一行搞定，自动拉起 airelay 再启动 Claude Code
 cc
-
-# 或手动指定环境变量
-ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
-
-# Codex CLI (走 airelay 代理)
-OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex
 ```
 
-`cc` 命令会自动检测 airelay 是否在运行，没有就跑一个后台进程，等它就绪后再启动 Claude Code。不想写代码的时候什么都不用管，零内存占用。
+就这一行。`cc` 会自动检测 airelay 是否在跑（没跑就后台拉起），然后启动 Claude Code。关机重启后也只需要输 `cc`。
 
-在 Claude Code 中切换模型：
+切换模型：
 
 ```
 /model deepseek/deepseek-v4-pro
 /model kimi/kimi-k3
 ```
 
-### 5. 开机自启（可选）
+> 如果用 Codex CLI：`OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex`
+
+### 4. 开机自启（可选）
 
 ```bash
-airelay-autostart on      # 启用开机自启
+airelay-autostart on      # 开机自动启动 airelay
 airelay-autostart off     # 关闭
 airelay-autostart status  # 查看状态
 ```
+
+开启后，开机就有托盘图标，任何时候输 `cc` 直接开始编码。
 
 ## 功能特性
 

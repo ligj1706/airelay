@@ -30,52 +30,53 @@ Codex CLI  ── OpenAI Responses ────▶                          ▶ 
 
 ### 1. Install
 
+Open a terminal, paste this, press Enter:
+
 ```bash
-# One-liner — auto-installs binary + PATH + aliases + optional auto-start
 curl -fsSL https://raw.githubusercontent.com/ligj1706/airelay/main/install.sh | bash
-
-# Or from source (requires Rust)
-git clone https://github.com/ligj1706/airelay.git
-cd airelay && cargo build --release
-cp target/release/airelay ~/.local/bin/
 ```
 
-### 2. Run
+After installation, **close and reopen your terminal** (or run `exec $SHELL`) to activate the `cc` and `ar` commands.
 
-```bash
-ar          # Start proxy (menu bar tray icon on macOS)
-            # Prints "airelay is running" if already started
-```
+> If you prefer building from source (requires Rust):
+> ```bash
+> git clone https://github.com/ligj1706/airelay.git
+> cd airelay && cargo build --release
+> cp target/release/airelay ~/.local/bin/
+> ```
 
-### 3. Configure
+### 2. Configure (first time only)
 
-Open `http://127.0.0.1:8082/admin` (or click tray icon → Open Admin):
+Type `ar` in terminal — the menu bar tray icon appears. Then open `http://127.0.0.1:8082/admin` (or click tray icon → Open Admin):
 
-1. Select a provider (e.g. DeepSeek)
+1. Pick a provider, e.g. DeepSeek
 2. Enter your API key
 3. Click Test Connection
-4. Save
+4. Click Save
 
-### 4. Launch AI Coding Tools
+### 3. Start Coding
 
 ```bash
-# Recommended: one command — auto-starts airelay, then launches Claude Code
 cc
-
-# Or manually set env vars
-ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
-
-# Codex CLI (via airelay proxy)
-OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex
 ```
 
-The `cc` command checks if airelay is running, spawns it in the background if needed, waits for it to be ready, then launches Claude Code. Zero memory overhead when you're not coding.
+That's it. `cc` auto-detects whether airelay is running (starts it in background if not), then launches Claude Code. Even after reboot, just type `cc`.
 
-Switch models inside Claude Code:
+Switch models:
 
 ```
 /model deepseek/deepseek-v4-pro
 /model kimi/kimi-k3
+```
+
+> For Codex CLI: `OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex`
+
+### 4. Auto-start (optional)
+
+```bash
+airelay-autostart on      # Launch airelay on login
+airelay-autostart off     # Disable
+airelay-autostart status  # Check status
 ```
 
 ### 5. Auto-start (optional)
