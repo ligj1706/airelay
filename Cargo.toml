@@ -1,6 +1,6 @@
 [package]
 name = "airelay"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "AI Relay — 协议中继，让 Claude Code / Codex 使用任意大模型 API"
 license = "MIT"

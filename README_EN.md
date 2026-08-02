@@ -12,8 +12,8 @@ Protocol relay for AI coding tools. Use any LLM with Claude Code or Codex CLI.
 |----------|--------|
 | macOS (Apple Silicon) | Full support — binary + tray |
 | macOS (Intel) | Full support — binary + tray |
-| Linux (x86_64) | CLI + server (no tray) |
-| Windows | CLI + server (tray untested) |
+| Windows (x86_64) | Binary + CLI + server (tray untested) |
+| Linux (x86_64) | Binary + CLI + server |
 
 ## What it does
 
@@ -30,13 +30,19 @@ Codex CLI  ── OpenAI Responses ────▶                          ▶ 
 
 ### 1. Install
 
-Open a terminal, paste this, press Enter:
+**macOS / Linux**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ligj1706/airelay/main/install.sh | bash
 ```
 
-After installation, **close and reopen your terminal** (or run `exec $SHELL`) to activate the `cc` and `ar` commands.
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/ligj1706/airelay/main/install.ps1 | iex
+```
+
+After installation, **close and reopen your terminal** (or run `exec $SHELL` on macOS/Linux) to activate the commands.
 
 > If you prefer building from source (requires Rust):
 > ```bash

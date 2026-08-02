@@ -13,12 +13,19 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-latest
             name: macos-arm64
+            ext: tar.gz
           - target: x86_64-apple-darwin
             os: macos-13
             name: macos-x86_64
+            ext: tar.gz
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             name: linux-x86_64
+            ext: tar.gz
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            name: windows-x86_64
+            ext: zip
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -41,13 +48,18 @@ jobs:
       - name: Package
         run: |
           cd target/${{ matrix.target }}/release
-          tar -czf airelay-${{ matrix.name }}.tar.gz airelay
+          if [ "${{ matrix.ext }}" = "zip" ]; then
+            7z a airelay-${{ matrix.name }}.zip airelay.exe
+          else
+            tar -czf airelay-${{ matrix.name }}.tar.gz airelay
+          fi
+        shell: bash
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: airelay-${{ matrix.name }}
-          path: target/${{ matrix.target }}/release/airelay-${{ matrix.name }}.tar.gz
+          path: target/${{ matrix.target }}/release/airelay-${{ matrix.name }}.${{ matrix.ext }}
 
   release:
     needs: build

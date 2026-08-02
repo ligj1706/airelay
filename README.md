@@ -12,8 +12,8 @@ AI 编程工具的协议中继。让 Claude Code / Codex CLI 使用任意大模�
 |------|------|
 | macOS (Apple Silicon) | 完整支持 — 二进制 + 托盘 |
 | macOS (Intel) | 完整支持 — 二进制 + 托盘 |
-| Linux (x86_64) | CLI + 服务器（无托盘） |
-| Windows | CLI + 服务器（托盘未验证） |
+| Windows (x86_64) | 二进制 + CLI + 服务器（托盘未验证） |
+| Linux (x86_64) | 二进制 + CLI + 服务器 |
 
 ## 解决什么问题
 
@@ -30,13 +30,19 @@ Codex CLI  ── OpenAI Responses ────▶                          ▶ 
 
 ### 1. 安装
 
-打开终端，粘贴下面这行，回车：
+**macOS / Linux**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ligj1706/airelay/main/install.sh | bash
 ```
 
-安装完成后，**关掉终端重新打开**（或执行 `exec $SHELL`），让 `cc` 和 `ar` 命令生效。
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/ligj1706/airelay/main/install.ps1 | iex
+```
+
+安装完成后，**关掉终端重新打开**（或执行 `exec $SHELL`），让命令生效。
 
 > 如果网络有问题，也可以从源码安装（需要 Rust 环境）：
 > ```bash
