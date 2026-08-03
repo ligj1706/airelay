@@ -2,7 +2,7 @@
 
 [中文](README.md)
 
-Protocol relay for AI coding tools. Use any LLM with Claude Code or Codex CLI.
+Use any LLM with Claude Code or Codex CLI — local protocol translation, zero setup.
 
 **3.0 MB single binary. Starts in milliseconds. Zero runtime dependencies. macOS menu bar app.**
 
@@ -12,14 +12,14 @@ Protocol relay for AI coding tools. Use any LLM with Claude Code or Codex CLI.
 |----------|--------|
 | macOS (Apple Silicon) | Full support — binary + tray |
 | macOS (Intel) | Full support — binary + tray |
-| Windows (x86_64) | Binary + CLI + server (tray untested) |
+| Windows (x86_64) | Binary + CLI + server (tray not yet available) |
 | Linux (x86_64) | Binary + CLI + server |
 
 ## What it does
 
 Claude Code requires Anthropic's Claude models (paid subscription). Codex CLI requires OpenAI models.
 
-airelay runs a local HTTP proxy that translates API protocols on the fly — Anthropic Messages ↔ OpenAI Chat Completions, OpenAI Responses ↔ Chat — so you can use DeepSeek, Kimi, GLM, Qwen, Ollama, or any OpenAI-compatible API with your favorite AI coding tools.
+airelay runs a local HTTP server that translates API protocols in real time — Anthropic Messages ↔ OpenAI Chat Completions, OpenAI Responses ↔ Chat — so you can use DeepSeek, Kimi, GLM, Qwen, Ollama, or any OpenAI-compatible API with your favorite AI coding tools.
 
 ```
 Claude Code ── Anthropic Messages ──▶ airelay ── OpenAI Chat ──▶ DeepSeek / Kimi / ...
@@ -81,14 +81,6 @@ Switch models:
 
 ```bash
 airelay-autostart on      # Launch airelay on login
-airelay-autostart off     # Disable
-airelay-autostart status  # Check status
-```
-
-### 5. Auto-start (optional)
-
-```bash
-airelay-autostart on      # Enable launch-on-login
 airelay-autostart off     # Disable
 airelay-autostart status  # Check status
 ```

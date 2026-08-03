@@ -89,6 +89,7 @@ src/
 - Admin UI 提示用内联 `showMsg()`，禁止浏览器 `alert()`/`confirm()` 弹窗
 - 大规模重命名/重构前先确认，不定夺性操作等用户决策后再执行
 - 用户说"继续""开始""先做这个"时直接执行，不追问确认
+- 提交信息统一英文 conventional commits（feat:/fix:/docs:/chore:），不混用中文
 
 ## 编译
 

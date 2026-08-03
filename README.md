@@ -2,7 +2,7 @@
 
 [English](README_EN.md)
 
-AI 编程工具的协议中继。让 Claude Code / Codex CLI 使用任意大模型 API。
+让 Claude Code / Codex CLI 使用任意大模型 API — 本地协议转换，开箱即用。
 
 **3.0 MB 单文件二进制，启动几十毫秒，零外部运行时依赖。macOS 菜单栏托盘常驻。**
 
@@ -12,7 +12,7 @@ AI 编程工具的协议中继。让 Claude Code / Codex CLI 使用任意大模�
 |------|------|
 | macOS (Apple Silicon) | 完整支持 — 二进制 + 托盘 |
 | macOS (Intel) | 完整支持 — 二进制 + 托盘 |
-| Windows (x86_64) | 二进制 + CLI + 服务器（托盘未验证） |
+| Windows (x86_64) | 二进制 + CLI + 服务器（托盘暂不可用） |
 | Linux (x86_64) | 二进制 + CLI + 服务器 |
 
 ## 解决什么问题
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/ligj1706/airelay/main/install.sh | 
 irm https://raw.githubusercontent.com/ligj1706/airelay/main/install.ps1 | iex
 ```
 
-安装完成后，**关掉终端重新打开**（或执行 `exec $SHELL`），让命令生效。
+安装完成后，**关闭终端窗口重新打开**（或执行 `exec $SHELL`），让命令生效。
 
 > 如果网络有问题，也可以从源码安装（需要 Rust 环境）：
 > ```bash
