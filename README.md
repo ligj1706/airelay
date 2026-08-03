@@ -65,11 +65,14 @@ ar
 
 浏览器打开管理界面，选择提供商（如 DeepSeek），填入 API Key，点「测试连接」确认连通，点「保存」。
 
-### 4. 使用 Claude Code
+### 4. 使用
 
 ```bash
-ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
+claude    # Claude Code
+codex     # Codex CLI
 ```
+
+安装脚本已自动配置好环境变量，直接输命令即可。如果还未安装 Claude Code，参考[官方文档](https://docs.anthropic.com/en/docs/claude-code/overview)。
 
 切换模型（Claude Code 内）：
 
@@ -78,16 +81,13 @@ ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
 /model kimi/kimi-k3
 ```
 
-> 如果用 Codex CLI：`OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex`
+### 5. 开机自启（可选）
 
-### 5. 开机自启（可选，仅 macOS）
-
-安装脚本提供了 `airelay-autostart` 命令：
+浏览器打开 `http://127.0.0.1:8082/admin`，在页面中打开开机自启开关。也可用命令行：
 
 ```bash
-airelay-autostart on      # 开机自动启动 airelay
+airelay-autostart on      # 启用
 airelay-autostart off     # 关闭
-airelay-autostart status  # 查看状态
 ```
 
 ## 功能特性

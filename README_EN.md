@@ -65,11 +65,14 @@ The install script sets up the `ar` alias: it checks whether airelay is running 
 
 Open the admin UI in your browser, pick a provider (e.g. DeepSeek), enter your API key, click Test Connection, then Save.
 
-### 4. Use Claude Code
+### 4. Use
 
 ```bash
-ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
+claude    # Claude Code
+codex     # Codex CLI
 ```
+
+The install script sets up required environment variables automatically. If you haven't installed Claude Code yet, see the [official docs](https://docs.anthropic.com/en/docs/claude-code/overview).
 
 Switch models (inside Claude Code):
 
@@ -78,16 +81,13 @@ Switch models (inside Claude Code):
 /model kimi/kimi-k3
 ```
 
-> For Codex CLI: `OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex`
+### 5. Auto-start (optional)
 
-### 5. Auto-start (optional, macOS only)
-
-The install script provides an `airelay-autostart` helper:
+Open `http://127.0.0.1:8082/admin` and toggle the auto-start switch. Or use the command line:
 
 ```bash
-airelay-autostart on      # Launch airelay on login
+airelay-autostart on      # Enable
 airelay-autostart off     # Disable
-airelay-autostart status  # Check status
 ```
 
 ## Features

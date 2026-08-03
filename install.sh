@@ -103,6 +103,9 @@ else
 
 # === airelay v4 ===
 alias ar='curl -s -o /dev/null http://127.0.0.1:8082/health 2>/dev/null && echo "airelay 已运行" || airelay --no-tray &'
+export ANTHROPIC_BASE_URL=http://127.0.0.1:8082
+export ANTHROPIC_AUTH_TOKEN=any
+export OPENAI_BASE_URL=http://127.0.0.1:8082/v1
 
 # 开机自启管理 (仅 macOS)
 airelay-autostart() {
@@ -146,16 +149,12 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  airelay 安装完成!"
 echo ""
 echo "  用法:"
-echo "    ar                       启动代理"
+echo "    ar       启动代理"
+echo "    claude   启动 Claude Code（已自动配置环境变量）"
+echo "    codex    启动 Codex CLI（已自动配置环境变量）"
 echo ""
-echo "  启动 AI 编程工具:"
-echo "    ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude"
-echo "    OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex"
-echo ""
-echo "  开机自启 (macOS):"
-echo "    airelay-autostart on      启用"
-echo "    airelay-autostart off     关闭"
-echo "    airelay-autostart status  查看状态"
+echo "  开机自启: Admin UI → 开机自启开关，或:"
+echo "    airelay-autostart on/off/status"
 echo ""
 echo "  配置页面:  http://127.0.0.1:8082/admin"
 echo ""
