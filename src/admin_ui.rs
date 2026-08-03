@@ -129,7 +129,7 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
 <header>
   <div class="wrap">
     <div class="logo">airelay</div>
-    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">运行中</span><label class="toggle toggle-sm" title="开机自启"><input type="checkbox" id="autostartToggle" onchange="toggleAutostart()"><span class="toggle-slider"></span></label><button class="btn btn-ghost btn-sm" onclick="toggleTheme()" id="themeBtn">暗色</button></div>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText" data-i18n="status-running">运行中</span><label class="toggle toggle-sm" title="开机自启"><input type="checkbox" id="autostartToggle" onchange="toggleAutostart()"><span class="toggle-slider"></span></label><button class="btn btn-ghost btn-sm" onclick="toggleLang()" id="langBtn">EN</button><button class="btn btn-ghost btn-sm" onclick="toggleTheme()" id="themeBtn">暗色</button></div>
   </div>
 </header>
 
@@ -137,79 +137,75 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
 
 <!-- Active Model Selector -->
 <div class="section">
-  <div class="section-title">当前模型</div>
+  <div class="section-title" id="t-active-title">当前使用模型</div>
   <div class="card">
     <div class="form-row">
       <div class="field" style="margin-bottom:0">
-        <label>提供商</label>
+        <label id="t-provider">提供商</label>
         <select id="activeProvider" onchange="onActiveProviderChange()"></select>
       </div>
       <div class="field" style="margin-bottom:0">
-        <label>模型</label>
+        <label id="t-model">模型</label>
         <select id="activeModel"></select>
       </div>
     </div>
-    <div class="hint mt-8" style="font-size:11px">Claude Code 中可使用 <code>provider/model</code> 格式切换，或直接使用默认模型</div>
+    <div class="msg" id="activeMsg" style="margin-top:8px"></div>
   </div>
 </div>
 
 <!-- Provider Configuration -->
 <div class="section">
-  <div class="section-title">配置提供商</div>
+  <div class="section-title" id="t-config-title">配置提供商</div>
   <div class="card">
     <div class="flex-between" style="margin-bottom:12px">
       <div class="form-row" style="flex:1">
         <div class="field" style="margin-bottom:0">
-          <label>选择提供商</label>
+          <label id="t-select-provider">选择提供商</label>
           <select id="configProvider" onchange="onConfigProviderChange()"></select>
         </div>
-        <div class="field" style="margin-bottom:0">
-          <label style="visibility:hidden">.</label>
-          <button class="btn btn-outline btn-sm" onclick="testCurrent()">测试连接</button>
-        </div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="showCreateForm()" style="margin-left:8px;flex-shrink:0;align-self:flex-end">+ 新增</button>
+      <button class="btn btn-ghost btn-sm" onclick="showCreateForm()" style="margin-left:8px;flex-shrink:0;align-self:flex-end" id="t-add">+ 新增</button>
     </div>
 
     <div id="createForm" style="display:none;margin-bottom:14px;padding:12px;background:var(--code-bg);border-radius:var(--radius)">
-      <div class="field"><label>Provider ID（唯一标识）</label><input type="text" id="newProviderId" placeholder="my-provider"></div>
-      <div class="field"><label>显示名称</label><input type="text" id="newDisplayName" placeholder="我的提供商"></div>
-      <div class="field"><label>Base URL（OpenAI 兼容）</label><input type="text" id="newBaseUrl" placeholder="https://api.example.com/v1"></div>
-      <div class="field"><label>Anthropic Base URL（可选）</label><input type="text" id="newAnthropicUrl" placeholder="https://api.example.com/anthropic"></div>
-      <div class="field"><label>API Key</label><input type="password" id="newApiKey" placeholder="sk-xxxxxxxx"></div>
-      <div class="field"><label>模型列表（逗号分隔）</label><input type="text" id="newModels" placeholder="model-v1, model-v2"></div>
+      <div class="field"><label id="t-new-id">Provider ID（唯一标识）</label><input type="text" id="newProviderId" placeholder="my-provider"></div>
+      <div class="field"><label id="t-new-name">显示名称</label><input type="text" id="newDisplayName" placeholder="我的提供商"></div>
+      <div class="field"><label id="t-new-baseurl">Base URL（OpenAI 兼容）</label><input type="text" id="newBaseUrl" placeholder="https://api.example.com/v1"></div>
+      <div class="field"><label id="t-new-anthro">Anthropic Base URL（可选）</label><input type="text" id="newAnthropicUrl" placeholder="https://api.example.com/anthropic"></div>
+      <div class="field"><label id="t-new-key">API Key</label><input type="password" id="newApiKey" placeholder="sk-xxxxxxxx"></div>
+      <div class="field"><label id="t-new-models">模型列表（逗号分隔）</label><input type="text" id="newModels" placeholder="model-v1, model-v2"></div>
       <div class="flex-between mt-12">
-        <button class="btn btn-primary btn-sm" onclick="doCreateProvider()">创建提供商</button>
-        <button class="btn btn-ghost btn-sm" onclick="hideCreateForm()">取消</button>
+        <button class="btn btn-primary btn-sm" onclick="doCreateProvider()" id="t-create">创建提供商</button>
+        <button class="btn btn-ghost btn-sm" onclick="hideCreateForm()" id="t-cancel">取消</button>
       </div>
       <div class="msg" id="createMsg"></div>
     </div>
 
     <div id="configForm" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
       <div class="field">
-        <label>API Key <a href="#" id="cfgApiKeyUrl" target="_blank" style="font-weight:500;font-size:12px;color:var(--focus);text-decoration:none;margin-left:8px;border-bottom:1px dashed var(--focus);padding-bottom:1px">申请 Key →</a></label>
+        <label><span id="t-api-key">API Key</span> <a href="#" id="cfgApiKeyUrl" target="_blank" style="font-weight:500;font-size:12px;color:var(--focus);text-decoration:none;margin-left:8px;border-bottom:1px dashed var(--focus);padding-bottom:1px" id="t-get-key">申请 Key →</a></label>
         <input type="password" id="cfgApiKey" placeholder="sk-xxxxxxxx" autocomplete="off">
         <div class="hint" id="cfgKeyHint"></div>
       </div>
       <div class="field">
-        <label>Base URL（OpenAI 兼容）</label>
+        <label id="t-cfg-baseurl">Base URL（OpenAI 兼容）</label>
         <input type="text" id="cfgBaseUrl">
       </div>
       <div class="field">
-        <label>Anthropic Base URL（可选）</label>
-        <input type="text" id="cfgAnthropicUrl" placeholder="留空则使用 OpenAI 协议转换">
+        <label id="t-cfg-anthro">Anthropic Base URL（可选）</label>
+        <input type="text" id="cfgAnthropicUrl" id="t-anthro-placeholder" placeholder="留空则使用 OpenAI 协议转换">
       </div>
       <div class="field">
-        <label>模型列表（逗号分隔）</label>
+        <label id="t-cfg-models">模型列表（逗号分隔）</label>
         <textarea id="cfgModels" rows="2"></textarea>
       </div>
 
       <div class="flex-between mt-12">
-        <button class="btn btn-primary" onclick="saveCurrent()">保存此提供商</button>
         <div class="gap-8">
-          <button class="btn btn-ghost btn-sm" onclick="saveAll()">保存全部</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteProvider()">删除</button>
+          <button class="btn btn-primary" onclick="saveCurrent()" id="t-save">保存</button>
+          <button class="btn btn-outline btn-sm" onclick="testCurrent()" id="t-test-conn">测试连接</button>
         </div>
+        <button class="btn btn-danger btn-sm" onclick="deleteProvider()" id="t-delete">删除</button>
       </div>
       <div class="msg" id="cfgMsg"></div>
     </div>
@@ -218,13 +214,13 @@ footer{text-align:center;padding:16px;font-size:10px;color:var(--text3);border-t
 
 <!-- Provider Status -->
 <div class="section">
-  <div class="section-title">提供商状态 <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--text3)">（点击切换配置）</span></div>
+  <div class="section-title"><span id="t-status-title">提供商状态</span> <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--text3)" id="t-click-switch">（点击切换配置）</span></div>
   <div class="provider-dots" id="providerDots"></div>
 </div>
 
 </div>
 
-<footer>airelay · API Key 仅存本地 <code>~/.airelay/config.toml</code></footer>
+<footer id="t-footer">airelay · API Key 仅存本地 <code>~/.airelay/config.toml</code></footer>
 
 <script>
 let state = {providers:{},default:{}};
@@ -236,7 +232,7 @@ const API_KEY_URLS = {
   kimi:'https://platform.moonshot.cn/console/api-keys',
   glm:'https://open.bigmodel.cn/usercenter/apikeys',
   minimax:'https://platform.minimax.io/user-center/basic-information/interface-key',
-  qwen:'https://bailian.console.aliyun.com/?apiKey=1',
+  qwen:'https://www.qianwenai.com/models/qwen3.8-max',
   openai:'https://platform.openai.com/api-keys',
   ollama:'',
   lmstudio:'',
@@ -263,7 +259,7 @@ function renderActiveSelector(){
   for(const [id,p] of Object.entries(state.providers)){
     const opt = document.createElement('option');
     opt.value = id;
-    opt.textContent = p.display_name + (p.has_key ? '' : ' (未配置)');
+    opt.textContent = p.display_name + (p.has_key ? '' : _t(' (未配置)',' (not configured)'));
     if(state.default.provider === id) opt.selected = true;
     ap.appendChild(opt);
   }
@@ -293,8 +289,18 @@ async function saveDefault(){
   const pid = document.getElementById('activeProvider').value;
   const mid = document.getElementById('activeModel').value;
   if(!pid || !mid) return;
+  var p = state.providers[pid];
+  if(!p || !p.has_key) {
+    showMsg('activeMsg','err',_t('该提供商未配置 API Key，请先在下方配置','No API Key configured for this provider'));
+    return;
+  }
+  showMsg('activeMsg','ok',_t('测试中…','Testing...'));
+  var r = await fetch('/admin/api/test', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider_id:pid,api_key:'',base_url:p.base_url||''})});
+  var d = await r.json();
+  if(!d.ok) { showMsg('activeMsg','err',_t('连接失败，未切换','Connection failed, not switched')); return; }
   state.default = {provider:pid, model:mid};
   await fetch('/admin/api/config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({default:{provider:pid,model:mid}})});
+  showMsg('activeMsg','ok',_t('已切换至 '+p.display_name+' / '+mid,'Switched to '+p.display_name+' / '+mid));
 }
 
 function renderConfigSelector(){
@@ -320,8 +326,8 @@ function renderConfigForm(){
   const isLocal = p.base_url && (p.base_url.includes('localhost')||p.base_url.includes('127.0.0.1'));
 
   document.getElementById('cfgApiKey').value = '';
-  document.getElementById('cfgApiKey').placeholder = isLocal ? '本地服务无需 Key' : (p.has_key ? (p.api_key_masked||'已保存') : 'sk-xxxxxxxx');
-  document.getElementById('cfgKeyHint').textContent = isLocal ? '本地模型不需要 API Key' : (p.has_key ? '已保存，输入新 Key 将覆盖' : '');
+  document.getElementById('cfgApiKey').placeholder = isLocal ? _t('本地服务无需 Key','Local service, no key needed') : (p.has_key ? (p.api_key_masked||_t('已保存','Saved')) : 'sk-xxxxxxxx');
+  document.getElementById('cfgKeyHint').textContent = isLocal ? _t('本地模型不需要 API Key','Local models do not need an API Key') : (p.has_key ? _t('已保存，输入新 Key 将覆盖','Saved, enter new key to overwrite') : '');
 
   const keyUrl = API_KEY_URLS[id];
   const linkEl = document.getElementById('cfgApiKeyUrl');
@@ -348,7 +354,7 @@ function renderDots(){
     const dot = document.createElement('span');
     dot.className = 'provider-dot';
     dot.innerHTML = '<span class="d '+cl+'"></span>'+p.display_name;
-    dot.title = p.has_key ? '已配置' : '未配置';
+    dot.title = p.has_key ? _t('已配置','Configured') : _t('未配置','Not configured');
     dot.onclick = function(){
       document.getElementById('configProvider').value = id;
       renderConfigForm();
@@ -361,15 +367,15 @@ async function testCurrent(){
   const id = document.getElementById('configProvider').value;
   const key = document.getElementById('cfgApiKey').value;
   const url = document.getElementById('cfgBaseUrl').value || state.providers[id]?.base_url || '';
-  if(!key && !state.providers[id]?.has_key){ showMsg('cfgMsg','err','请先输入 API Key'); return; }
-  showMsg('cfgMsg','ok','测试中…');
+  if(!key){ showMsg('cfgMsg','err',_t('请先输入 API Key','Please enter an API Key')); return; }
+  showMsg('cfgMsg','ok',_t('测试中…','Testing...'));
   const r = await fetch('/admin/api/test', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider_id:id,api_key:key,base_url:url})});
   const d = await r.json();
   if(d.ok){
     if(d.models && d.models.length>0) document.getElementById('cfgModels').value = d.models.join(', ');
     showMsg('cfgMsg','ok',d.message);
   } else {
-    showMsg('cfgMsg','err',d.error||'连接失败');
+    showMsg('cfgMsg','err',d.error||_t('连接失败','Connection failed'));
   }
 }
 
@@ -389,27 +395,8 @@ async function saveCurrent(){
   if(keyVal) state.providers[id].api_key_masked = '****'+keyVal.slice(-4);
 
   const r = await fetch('/admin/api/config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.ok){ await load(); showMsg('cfgMsg','ok','配置已保存'); }
-  else { showMsg('cfgMsg','err','保存失败'); }
-}
-
-async function saveAll(){
-  const body = { default: state.default, providers: {} };
-  for(const [id] of Object.entries(state.providers)){
-    if(id === editingId){
-      const keyVal = document.getElementById('cfgApiKey').value.trim();
-      const urlVal = document.getElementById('cfgBaseUrl').value.trim();
-      const anthroUrl = document.getElementById('cfgAnthropicUrl').value.trim();
-      const modelsRaw = document.getElementById('cfgModels').value;
-      const models = modelsRaw.split(/[,，]/).map(s=>s.trim()).filter(s=>s);
-      body.providers[id] = { api_key: keyVal||'', base_url: urlVal, anthropic_base_url: anthroUrl, models: models };
-    } else {
-      body.providers[id] = { models: state.providers[id].models };
-    }
-  }
-  const r = await fetch('/admin/api/config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(r.ok){ await load(); showMsg('cfgMsg','ok','全部已保存'); }
-  else { showMsg('cfgMsg','err','保存失败'); }
+  if(r.ok){ await load(); showMsg('cfgMsg','ok',_t('配置已保存','Config saved')); }
+  else { showMsg('cfgMsg','err',_t('保存失败','Save failed')); }
 }
 
 // Theme
@@ -417,15 +404,46 @@ function toggleTheme(){
   const cur = document.documentElement.getAttribute('data-theme');
   const next = cur === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
-  document.getElementById('themeBtn').textContent = next === 'dark' ? '亮色' : '暗色';
+  document.getElementById('themeBtn').textContent = next === 'dark' ? _t('亮色','Light') : _t('暗色','Dark');
   try{ localStorage.setItem('airelay-theme', next); }catch(e){}
 }
+
+var curLang='zh';
+function _t(zh,en){ return curLang==='zh'?zh:en; }
+var TR={
+'t-active-title':['当前使用模型','Current Model'],'t-provider':['提供商','Provider'],'t-model':['模型','Model'],
+'t-config-title':['配置提供商','Provider Config'],'t-select-provider':['选择提供商','Select Provider'],
+'t-test-conn':['测试连接','Test Connection'],'t-add':['+ 新增','+ Add'],
+'t-new-id':['Provider ID（唯一标识）','Provider ID (unique)'],'t-new-name':['显示名称','Display Name'],
+'t-new-baseurl':['Base URL（OpenAI 兼容）','Base URL (OpenAI compatible)'],
+'t-new-anthro':['Anthropic Base URL（可选）','Anthropic Base URL (optional)'],
+'t-new-key':['API Key','API Key'],'t-new-models':['模型列表（逗号分隔）','Model list (comma separated)'],
+'t-create':['创建提供商','Create Provider'],'t-cancel':['取消','Cancel'],
+'t-api-key':['API Key','API Key'],'t-get-key':['申请 Key →','Get Key →'],
+'t-cfg-baseurl':['Base URL（OpenAI 兼容）','Base URL (OpenAI compatible)'],
+'t-cfg-anthro':['Anthropic Base URL（可选）','Anthropic Base URL (optional)'],
+'t-cfg-models':['模型列表（逗号分隔）','Model list (comma separated)'],
+'t-save':['保存','Save'],'t-delete':['删除','Delete'],
+'t-status-title':['提供商状态','Provider Status'],'t-click-switch':['（点击切换配置）',' (click to switch)'],
+'t-footer':['airelay · API Key 仅存本地 <code>~/.airelay/config.toml</code>','airelay · API Keys stored locally in <code>~/.airelay/config.toml</code>']
+};
+function setLang(l){
+  curLang=l; var i=l==='zh'?0:1;
+  for(var id in TR){ var el=document.getElementById(id); if(el){ if(id==='t-footer') el.innerHTML=TR[id][i]; else el.textContent=TR[id][i]; } }
+  document.getElementById('t-anthro-placeholder').placeholder=_t('留空则使用 OpenAI 协议转换','Leave empty for OpenAI protocol conversion');
+  document.getElementById('langBtn').textContent=l==='zh'?'EN':'中';
+  var at=document.getElementById('autostartToggle'); if(at&&at.parentElement) at.parentElement.title=_t('开机自启','Auto-start');
+  updateThemeBtn();
+  if(Object.keys(state.providers).length>0) renderAll();
+}
+function toggleLang(){ setLang(curLang==='zh'?'en':'zh'); try{localStorage.setItem('airelay-lang',curLang);}catch(e){} }
+try{ var s=localStorage.getItem('airelay-lang'); if(s==='zh'||s==='en') setLang(s); }catch(e){}
 
 function initTheme(){
   let t;
   try{ t = localStorage.getItem('airelay-theme'); }catch(e){}
   if(!t && window.matchMedia('(prefers-color-scheme: dark)').matches) t = 'dark';
-  if(t){ document.documentElement.setAttribute('data-theme', t); document.getElementById('themeBtn').textContent = t === 'dark' ? '亮色' : '暗色'; }
+  if(t){ document.documentElement.setAttribute('data-theme', t); document.getElementById('themeBtn').textContent = t === 'dark' ? _t('亮色','Light') : _t('暗色','Dark'); }
 }
 
 // Provider add/delete
@@ -448,20 +466,20 @@ async function doCreateProvider(){
   const anthroUrl = document.getElementById('newAnthropicUrl').value.trim();
   const key = document.getElementById('newApiKey').value.trim();
   const models = document.getElementById('newModels').value.split(/[,，]/).map(s=>s.trim()).filter(s=>s);
-  if(!id){ showMsg('createMsg','err','Provider ID 不能为空'); return; }
-  showMsg('createMsg','ok','创建中…');
+  if(!id){ showMsg('createMsg','err',_t('Provider ID 不能为空','Provider ID is required')); return; }
+  showMsg('createMsg','ok',_t('创建中…','Creating...'));
   const r = await fetch('/admin/api/provider', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,display_name:dn||id,base_url:url,anthropic_base_url:anthroUrl||null,api_key:key,models:models})});
   const d = await r.json();
-  if(r.ok){ hideCreateForm(); await load(); showMsg('cfgMsg','ok','提供商已创建'); }
-  else { showMsg('createMsg','err',d.error||'创建失败'); }
+  if(r.ok){ hideCreateForm(); await load(); showMsg('cfgMsg','ok',_t('提供商已创建','Provider created')); }
+  else { showMsg('createMsg','err',d.error||_t('创建失败','Create failed')); }
 }
 
 async function deleteProvider(){
   const id = document.getElementById('configProvider').value;
-  if(!confirm('确定删除提供商 '+id+' ？此操作不可撤销。')) return;
+  if(!confirm(_t('确定删除提供商 ','Delete provider ')+id+_t(' ？此操作不可撤销。','? This cannot be undone.'))) return;
   const r = await fetch('/admin/api/provider/'+encodeURIComponent(id), {method:'DELETE'});
-  if(r.ok){ await load(); showMsg('cfgMsg','ok','已删除'); }
-  else { const d = await r.json(); showMsg('cfgMsg','err',d.error||'删除失败'); }
+  if(r.ok){ await load(); showMsg('cfgMsg','ok',_t('已删除','Deleted')); }
+  else { const d = await r.json(); showMsg('cfgMsg','err',d.error||_t('删除失败','Delete failed')); }
 }
 
 function showMsg(id,type,text){
@@ -503,11 +521,11 @@ setInterval(async()=>{
     const r = await fetch('/health');
     if(r.ok){
       document.getElementById('statusDot').style.background='var(--green)';
-      document.getElementById('statusText').textContent='运行中';
+      document.getElementById('statusText').textContent=_t('运行中','Running');
     } else { throw new Error(); }
   } catch(e) {
     document.getElementById('statusDot').style.background='var(--red)';
-    document.getElementById('statusText').textContent='离线';
+    document.getElementById('statusText').textContent=_t('离线','Offline');
   }
 }, 10000);
 </script>

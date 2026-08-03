@@ -851,7 +851,7 @@ async fn handle_admin_delete_provider(
         ));
     }
 
-    config.providers.remove(&id);
+    config.providers.swap_remove(&id);
 
     if config.default.provider == id {
         if let Some((fid, fmodel)) = fallback {
