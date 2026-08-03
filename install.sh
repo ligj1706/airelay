@@ -82,20 +82,49 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo "✓ PATH 已添加: $SHELL_RC"
 fi
 
-# === 添加别名 ===
+# === 添加别名 (v2: 版本化标记支持增量升级) ===
 ALIASES_ADDED=0
-if ! grep -q "airelay" "$SHELL_RC" 2>/dev/null; then
+MARKER_V2="# === airelay v2 ==="
+
+if grep -qF "$MARKER_V2" "$SHELL_RC" 2>/dev/null; then
+    echo "✓ 别名已是最新版本 (v2)"
+    ALIASES_ADDED=1
+else
+    # 清理旧版冲突项
+    if grep -q "airelay" "$SHELL_RC" 2>/dev/null; then
+        echo "→ 检测到旧版 airelay 配置，正在升级..."
+        # 删除旧的 alias ar=... 行
+        sed -i '' '/^alias ar=.*airelay/d' "$SHELL_RC" 2>/dev/null || sed -i '/^alias ar=.*airelay/d' "$SHELL_RC"
+        # 删除旧的 alias cc="claude" 行（会和新 cc() 函数冲突）
+        sed -i '' '/^alias cc="claude"/d' "$SHELL_RC" 2>/dev/null || sed -i '/^alias cc="claude"/d' "$SHELL_RC"
+        # 删除旧的 v1 标记行
+        sed -i '' '/^# === airelay: AI/d' "$SHELL_RC" 2>/dev/null || sed -i '/^# === airelay: AI/d' "$SHELL_RC"
+        # 删除旧的 airelay-autostart 函数（v1 inline 版本）
+        if grep -q "airelay-autostart()" "$SHELL_RC" 2>/dev/null; then
+            tmpfile=$(mktemp)
+            skip=0
+            while IFS= read -r line; do
+                case "$line" in
+                    *"airelay-autostart()"*) skip=1 ;;
+                esac
+                [ "$line" = "}" ] && [ $skip -eq 1 ] && { skip=0; continue; }
+                [ $skip -eq 0 ] && echo "$line" >> "$tmpfile"
+            done < "$SHELL_RC"
+            mv "$tmpfile" "$SHELL_RC"
+        fi
+    fi
+
     cat >> "$SHELL_RC" << 'ALIASEOF'
 
-# === airelay: AI 模型协议中继 ===
-alias ar='curl -s -o /dev/null http://127.0.0.1:8082/health 2>/dev/null && echo "airelay 已运行" || airelay &'  # 启动代理
+# === airelay v2: AI 模型协议中继 ===
+alias ar='curl -s -o /dev/null http://127.0.0.1:8082/health 2>/dev/null && echo "airelay 已运行" || airelay --no-tray &'  # 启动代理 (headless)
 
-# Claude Code 智能启动 — 自动拉起 airelay，用完即走
+# Claude Code 智能启动 — 自动拉起 airelay headless，用完即走
 cc() {
-  # 如果 airelay 没在跑，后台拉起
+  # 如果 airelay 没在跑，后台拉起 headless 模式
   if ! curl -s http://127.0.0.1:8082/health >/dev/null 2>&1; then
     printf "→ 启动 airelay..."
-    airelay &
+    airelay --no-tray &
     # 等它就绪（最多等 3 秒）
     for i in $(seq 1 30); do
       curl -s http://127.0.0.1:8082/health >/dev/null 2>&1 && break
@@ -140,7 +169,7 @@ PLISTEOF
 }
 ALIASEOF
     ALIASES_ADDED=1
-    echo "✓ 别名已添加: ar / cc / airelay-autostart"
+    echo "✓ 别名已添加: ar / cc / airelay-autostart (v2)"
 fi
 
 echo ""

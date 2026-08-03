@@ -31,6 +31,7 @@ fn main() {
         Command::Switch(model_spec) => run_switch(&config_path, &model_spec),
         Command::List => run_list(&config_path),
         Command::Status => run_status(&config_path),
+        Command::Serve if args.no_tray => run_headless(config_path),
         Command::Serve => run_gui(config_path),
     }
 }
@@ -105,6 +106,62 @@ fn run_gui(config_path: PathBuf) {
 
     // Run tray on main thread — must be main thread on macOS (AppKit constraint)
     tray::run(cfg, config_path, &addr_tray, notify);
+    let _ = server_thread.join();
+}
+
+// ==================== Headless path (no tray) ====================
+
+fn run_headless(config_path: PathBuf) {
+    let cfg: Arc<std::sync::RwLock<config::Config>> =
+        Arc::new(config::load_or_create_config(&config_path));
+
+    let addr = {
+        let c = cfg.read().unwrap();
+        format!("{}:{}", c.server.host, c.server.port)
+    };
+
+    let notify = Arc::new(tokio::sync::Notify::new());
+    let state = Arc::new(server::AppState::new(cfg.clone(), config_path.clone()));
+    let n2 = notify.clone();
+
+    let addr_server = addr.clone();
+    let addr_log = addr.clone();
+
+    let server_thread = thread::Builder::new()
+        .name("airelay-server".into())
+        .spawn(move || {
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(2)
+                .enable_all()
+                .build()
+                .unwrap();
+            rt.block_on(async {
+                let router = server::build_router(state);
+                let listener = match tokio::net::TcpListener::bind(&addr_server).await {
+                    Ok(l) => l,
+                    Err(e) => {
+                        eprintln!("启动失败: 无法绑定 {}: {e}", addr_server);
+                        std::process::exit(1);
+                    }
+                };
+                eprintln!("airelay headless running at http://{addr_server}");
+                axum::serve(listener, router)
+                    .with_graceful_shutdown(async move {
+                        n2.notified().await;
+                    })
+                    .await
+                    .unwrap();
+            });
+        })
+        .unwrap();
+
+    tracing::info!("airelay (headless) running at http://{addr_log}");
+    tracing::info!("Admin UI: http://{addr_log}/admin");
+
+    eprintln!("airelay 已启动 (headless 模式): http://{addr_log}");
+    eprintln!("按 Ctrl+C 退出");
+
+    // Block main thread until Ctrl+C
     let _ = server_thread.join();
 }
 
@@ -277,6 +334,7 @@ enum Command {
 struct Args {
     config: Option<PathBuf>,
     command: Command,
+    no_tray: bool,
 }
 
 impl Args {
@@ -284,6 +342,7 @@ impl Args {
         let args: Vec<String> = std::env::args().collect();
         let mut config = None;
         let mut command = Command::Serve;
+        let mut no_tray = false;
         let mut i = 1;
 
         while i < args.len() {
@@ -294,6 +353,7 @@ impl Args {
                         config = Some(PathBuf::from(&args[i]));
                     }
                 }
+                "--no-tray" | "--headless" => no_tray = true,
                 "switch" => {
                     i += 1;
                     if i < args.len() {
@@ -307,14 +367,14 @@ impl Args {
                 "status" => command = Command::Status,
                 other => {
                     eprintln!("未知命令: {other}");
-                    eprintln!("用法: airelay [--config PATH] [switch <p/m> | list | status]");
+                    eprintln!("用法: airelay [--config PATH] [--no-tray] [switch <p/m> | list | status]");
                     std::process::exit(1);
                 }
             }
             i += 1;
         }
 
-        Self { config, command }
+        Self { config, command, no_tray }
     }
 }
 
