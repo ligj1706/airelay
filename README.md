@@ -44,31 +44,34 @@ irm https://raw.githubusercontent.com/ligj1706/airelay/main/install.ps1 | iex
 
 安装完成后，**关闭终端窗口重新打开**（或执行 `exec $SHELL`），让命令生效。
 
-> 如果网络有问题，也可以从源码安装（需要 Rust 环境）：
+安装脚本会自动做三件事：把 `airelay` 放到 `~/.local/bin/`、追加 PATH、写入 `ar` 别名。
+
+> 如果网络有问题，也可以从源码编译（需要 Rust 环境）：
 > ```bash
 > git clone https://github.com/ligj1706/airelay.git
 > cd airelay && cargo build --release
 > cp target/release/airelay ~/.local/bin/
 > ```
 
-### 2. 配置（仅第一次）
-
-在终端输入 `ar`，菜单栏会出现 airelay 图标。然后浏览器打开 `http://127.0.0.1:8082/admin`（或点击托盘图标 → 打开管理界面）：
-
-1. 选择提供商，如 DeepSeek
-2. 填入 API Key
-3. 点「测试连接」确认连通
-4. 点「保存」
-
-### 3. 开始写代码
+### 2. 启动
 
 ```bash
-cc
+ar
 ```
 
-就这一行。`cc` 会自动检测 airelay 是否在跑（没跑就后台拉起），然后启动 Claude Code。关机重启后也只需要输 `cc`。
+安装脚本已配置好 `ar` 别名：检测 airelay 是否在跑，没跑就后台拉起。启动后访问 `http://127.0.0.1:8082/admin` 进行配置。
 
-切换模型：
+### 3. 配置
+
+浏览器打开管理界面，选择提供商（如 DeepSeek），填入 API Key，点「测试连接」确认连通，点「保存」。
+
+### 4. 使用 Claude Code
+
+```bash
+ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
+```
+
+切换模型（Claude Code 内）：
 
 ```
 /model deepseek/deepseek-v4-pro
@@ -77,15 +80,15 @@ cc
 
 > 如果用 Codex CLI：`OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex`
 
-### 4. 开机自启（可选）
+### 5. 开机自启（可选，仅 macOS）
+
+安装脚本提供了 `airelay-autostart` 命令：
 
 ```bash
 airelay-autostart on      # 开机自动启动 airelay
 airelay-autostart off     # 关闭
 airelay-autostart status  # 查看状态
 ```
-
-开启后，开机就有托盘图标，任何时候输 `cc` 直接开始编码。
 
 ## 功能特性
 
@@ -103,18 +106,9 @@ airelay-autostart status  # 查看状态
 
 ## 预置提供商
 
-| Provider | 模型列表 |
-|----------|----------|
-| `anthropic` | claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5 |
-| `deepseek` | deepseek-v4-pro, deepseek-v4-flash |
-| `kimi` | kimi-k3, kimi-k2.6, kimi-k2.7-code |
-| `glm` | glm-5.2, glm-5.1, glm-4.7-flash |
-| `minimax` | MiniMax-M3, MiniMax-M2.7 |
-| `qwen` | qwen3-coder-next, qwen3-coder-plus, qwen3.7-max |
-| `openai` | gpt-5.4, gpt-5.4-mini |
-| `ollama` | qwen3-coder:latest, deepseek-r1:latest |
-| `lmstudio` | auto |
-| `custom` | your-model-name |
+`anthropic` · `deepseek` · `kimi` · `glm` · `minimax` · `qwen` · `openai` · `ollama` · `lmstudio` · `custom`
+
+具体模型在 Admin UI 中查看和切换，也可自行增删。
 
 ## CLI 命令
 

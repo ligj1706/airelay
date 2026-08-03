@@ -52,7 +52,7 @@ display_name = "阿里百炼 Qwen"
 api_key = ""
 base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 anthropic_base_url = "https://dashscope.aliyuncs.com/apps/anthropic"
-models = ["qwen3-coder-next", "qwen3-coder-plus", "qwen3.7-max"]
+models = ["qwen3.8-max", "qwen3-coder-next", "qwen3-coder-plus"]
 
 [providers.openai]
 display_name = "OpenAI"

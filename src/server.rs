@@ -880,15 +880,21 @@ async fn handle_admin_test(
     let api_key = body.get("api_key").and_then(|v| v.as_str()).unwrap_or("");
     let base_url = body.get("base_url").and_then(|v| v.as_str()).unwrap_or("");
 
-    let key = if is_masked(api_key) || api_key.is_empty() {
+    let (key, url) = {
         let config = state.config.read().unwrap();
-        config
-            .providers
-            .get(provider_id)
-            .map(|p| p.api_key.clone())
-            .unwrap_or_default()
-    } else {
-        api_key.to_string()
+        let provider = config.providers.get(provider_id);
+        let key = if is_masked(api_key) || api_key.is_empty() {
+            provider.map(|p| p.api_key.clone()).unwrap_or_default()
+        } else {
+            api_key.to_string()
+        };
+        let base = if base_url.is_empty() {
+            provider.map(|p| p.base_url()).unwrap_or_default()
+        } else {
+            base_url.to_string()
+        };
+        let url = format!("{}/models", base.trim_end_matches('/'));
+        (key, url)
     };
 
     if key.is_empty() {
@@ -897,8 +903,6 @@ async fn handle_admin_test(
             "error": "API Key 为空"
         }));
     }
-
-    let url = format!("{}/models", base_url.trim_end_matches('/'));
 
     match state
         .http_client
