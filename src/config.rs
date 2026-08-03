@@ -253,16 +253,15 @@ pub fn resolve_model<'a>(config: &'a Config, model_name: &'a str) -> (&'a str, &
         return (provider, model, model_name);
     }
 
-    let default_provider = config.providers.get(&config.default.provider);
-    if let Some(p) = default_provider {
-        if p.models.iter().any(|m| m == model_name) {
-            return (&config.default.provider, model_name, model_name);
-        }
+    // Try exact match first
+    if let Some(result) = try_match_model(config, model_name, model_name) {
+        return result;
     }
 
-    for (pid, p) in &config.providers {
-        if p.models.iter().any(|m| m == model_name) {
-            return (pid, model_name, model_name);
+    // Strip context window suffix like [1m], [256k] and retry
+    if let Some(stripped) = strip_context_suffix(model_name) {
+        if let Some(result) = try_match_model(config, &stripped, model_name) {
+            return result;
         }
     }
 
@@ -278,4 +277,48 @@ pub fn resolve_model<'a>(config: &'a Config, model_name: &'a str) -> (&'a str, &
         &config.default.model,
         model_name,
     )
+}
+
+fn try_match_model<'a>(
+    config: &'a Config,
+    lookup: &str,
+    original: &'a str,
+) -> Option<(&'a str, &'a str, &'a str)> {
+    let default_provider = config.providers.get(&config.default.provider);
+    if let Some(p) = default_provider {
+        if p.models.iter().any(|m| m == lookup) {
+            return Some((&config.default.provider, original, original));
+        }
+    }
+
+    // Only match providers that have an API key configured
+    for (pid, p) in &config.providers {
+        if p.api_key.is_empty() {
+            continue;
+        }
+        if p.models.iter().any(|m| m == lookup) {
+            return Some((pid, original, original));
+        }
+    }
+
+    None
+}
+
+/// Strip context window suffix like [1m], [256k], [128K] from model name
+fn strip_context_suffix(name: &str) -> Option<String> {
+    let bytes = name.as_bytes();
+    if bytes.last() != Some(&b']') {
+        return None;
+    }
+    if let Some(open) = name.rfind('[') {
+        let suffix = &name[open + 1..name.len() - 1];
+        let is_context = suffix
+            .to_lowercase()
+            .chars()
+            .all(|c| c.is_ascii_digit() || c == 'k' || c == 'm');
+        if is_context && !suffix.is_empty() {
+            return Some(name[..open].trim().to_string());
+        }
+    }
+    None
 }

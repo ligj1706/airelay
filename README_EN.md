@@ -44,6 +44,8 @@ irm https://raw.githubusercontent.com/ligj1706/airelay/main/install.ps1 | iex
 
 After installation, **close and reopen your terminal** (or run `exec $SHELL` on macOS/Linux) to activate the commands.
 
+The install script handles three things: puts `airelay` in `~/.local/bin/`, appends to PATH, and writes the `ar` alias.
+
 > If you prefer building from source (requires Rust):
 > ```bash
 > git clone https://github.com/ligj1706/airelay.git
@@ -51,24 +53,25 @@ After installation, **close and reopen your terminal** (or run `exec $SHELL` on 
 > cp target/release/airelay ~/.local/bin/
 > ```
 
-### 2. Configure (first time only)
-
-Type `ar` in terminal — the menu bar tray icon appears. Then open `http://127.0.0.1:8082/admin` (or click tray icon → Open Admin):
-
-1. Pick a provider, e.g. DeepSeek
-2. Enter your API key
-3. Click Test Connection
-4. Click Save
-
-### 3. Start Coding
+### 2. Start
 
 ```bash
-cc
+ar
 ```
 
-That's it. `cc` auto-detects whether airelay is running (starts it in background if not), then launches Claude Code. Even after reboot, just type `cc`.
+The install script sets up the `ar` alias: it checks whether airelay is running and starts it in the background if not. Then open `http://127.0.0.1:8082/admin` to configure.
 
-Switch models:
+### 3. Configure
+
+Open the admin UI in your browser, pick a provider (e.g. DeepSeek), enter your API key, click Test Connection, then Save.
+
+### 4. Use Claude Code
+
+```bash
+ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude
+```
+
+Switch models (inside Claude Code):
 
 ```
 /model deepseek/deepseek-v4-pro
@@ -77,7 +80,9 @@ Switch models:
 
 > For Codex CLI: `OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex`
 
-### 4. Auto-start (optional)
+### 5. Auto-start (optional, macOS only)
+
+The install script provides an `airelay-autostart` helper:
 
 ```bash
 airelay-autostart on      # Launch airelay on login
@@ -101,18 +106,9 @@ airelay-autostart status  # Check status
 
 ## Preset Providers
 
-| Provider | Models |
-|----------|--------|
-| `anthropic` | claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5 |
-| `deepseek` | deepseek-v4-pro, deepseek-v4-flash |
-| `kimi` | kimi-k3, kimi-k2.6, kimi-k2.7-code |
-| `glm` | glm-5.2, glm-5.1, glm-4.7-flash |
-| `minimax` | MiniMax-M3, MiniMax-M2.7 |
-| `qwen` | qwen3-coder-next, qwen3-coder-plus, qwen3.7-max |
-| `openai` | gpt-5.4, gpt-5.4-mini |
-| `ollama` | qwen3-coder:latest, deepseek-r1:latest |
-| `lmstudio` | auto |
-| `custom` | your-model-name |
+`anthropic` · `deepseek` · `kimi` · `glm` · `minimax` · `qwen` · `openai` · `ollama` · `lmstudio` · `custom`
+
+Model lists are managed through the Admin UI. Add or remove models as needed.
 
 ## CLI
 

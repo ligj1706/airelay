@@ -82,58 +82,27 @@ if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     echo "✓ PATH 已添加: $SHELL_RC"
 fi
 
-# === 添加别名 (v2: 版本化标记支持增量升级) ===
+# === 添加别名 (v4) ===
 ALIASES_ADDED=0
-MARKER_V2="# === airelay v2 ==="
+MARKER_V4="# === airelay v4 ==="
 
-if grep -qF "$MARKER_V2" "$SHELL_RC" 2>/dev/null; then
-    echo "✓ 别名已是最新版本 (v2)"
+if grep -qF "$MARKER_V4" "$SHELL_RC" 2>/dev/null; then
+    echo "✓ 别名已是最新版本 (v4)"
     ALIASES_ADDED=1
 else
     # 清理旧版冲突项
     if grep -q "airelay" "$SHELL_RC" 2>/dev/null; then
         echo "→ 检测到旧版 airelay 配置，正在升级..."
+        # 删除所有旧版 airelay 标记行
+        sed -i '' '/^# === airelay/d' "$SHELL_RC" 2>/dev/null || sed -i '/^# === airelay/d' "$SHELL_RC"
         # 删除旧的 alias ar=... 行
         sed -i '' '/^alias ar=.*airelay/d' "$SHELL_RC" 2>/dev/null || sed -i '/^alias ar=.*airelay/d' "$SHELL_RC"
-        # 删除旧的 alias cc="claude" 行（会和新 cc() 函数冲突）
-        sed -i '' '/^alias cc="claude"/d' "$SHELL_RC" 2>/dev/null || sed -i '/^alias cc="claude"/d' "$SHELL_RC"
-        # 删除旧的 v1 标记行
-        sed -i '' '/^# === airelay: AI/d' "$SHELL_RC" 2>/dev/null || sed -i '/^# === airelay: AI/d' "$SHELL_RC"
-        # 删除旧的 airelay-autostart 函数（v1 inline 版本）
-        if grep -q "airelay-autostart()" "$SHELL_RC" 2>/dev/null; then
-            tmpfile=$(mktemp)
-            skip=0
-            while IFS= read -r line; do
-                case "$line" in
-                    *"airelay-autostart()"*) skip=1 ;;
-                esac
-                [ "$line" = "}" ] && [ $skip -eq 1 ] && { skip=0; continue; }
-                [ $skip -eq 0 ] && echo "$line" >> "$tmpfile"
-            done < "$SHELL_RC"
-            mv "$tmpfile" "$SHELL_RC"
-        fi
     fi
 
     cat >> "$SHELL_RC" << 'ALIASEOF'
 
-# === airelay v2: AI 模型协议中继 ===
-alias ar='curl -s -o /dev/null http://127.0.0.1:8082/health 2>/dev/null && echo "airelay 已运行" || airelay --no-tray &'  # 启动代理 (headless)
-
-# Claude Code 智能启动 — 自动拉起 airelay headless，用完即走
-cc() {
-  # 如果 airelay 没在跑，后台拉起 headless 模式
-  if ! curl -s http://127.0.0.1:8082/health >/dev/null 2>&1; then
-    printf "→ 启动 airelay..."
-    airelay --no-tray &
-    # 等它就绪（最多等 3 秒）
-    for i in $(seq 1 30); do
-      curl -s http://127.0.0.1:8082/health >/dev/null 2>&1 && break
-      sleep 0.1
-    done
-    echo " ✓"
-  fi
-  ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude "$@"
-}
+# === airelay v4 ===
+alias ar='curl -s -o /dev/null http://127.0.0.1:8082/health 2>/dev/null && echo "airelay 已运行" || airelay --no-tray &'
 
 # 开机自启管理 (仅 macOS)
 airelay-autostart() {
@@ -169,7 +138,7 @@ PLISTEOF
 }
 ALIASEOF
     ALIASES_ADDED=1
-    echo "✓ 别名已添加: ar / cc / airelay-autostart (v2)"
+    echo "✓ 别名已添加: ar / airelay-autostart (v4)"
 fi
 
 echo ""
@@ -177,13 +146,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  airelay 安装完成!"
 echo ""
 echo "  用法:"
-echo "    cc                 启动 Claude Code（自动拉起 airelay）"
-echo "    ar                 管理代理 (打开菜单栏托盘)"
+echo "    ar                       启动代理"
 echo ""
 echo "  启动 AI 编程工具:"
-echo "    cc                     Claude Code（推荐，一行搞定）"
-echo "    ar && claude ...       Claude Code（手动两步）"
-echo "    codex                  Codex CLI"
+echo "    ANTHROPIC_BASE_URL=http://127.0.0.1:8082 ANTHROPIC_AUTH_TOKEN=any claude"
+echo "    OPENAI_BASE_URL=http://127.0.0.1:8082/v1 codex"
 echo ""
 echo "  开机自启 (macOS):"
 echo "    airelay-autostart on      启用"
