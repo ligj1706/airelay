@@ -108,4 +108,7 @@ Provider 在没有 API Key 时不会出现在 `/v1/models` 列表中。
 airelay list          # 列出所有提供商及状态
 airelay status        # 查看运行状态（探测 server 是否在线）
 airelay switch <p/m>  # 热加载切换默认模型（在线→HTTP / 离线→文件）
+airelay tray          # 纯入口模式：菜单栏图标（当前模型/切换模型/打开管理界面），退出不影响 headless 服务
 ```
+
+`airelay tray` 是独立入口进程，不绑端口、不起服务；模型切换走 Admin API 热加载（headless 服务内存同步生效）。`ar` 别名幂等拉起"headless 服务 + tray 入口"。

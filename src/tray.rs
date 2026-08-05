@@ -117,6 +117,116 @@ pub fn run(
     });
 }
 
+/// 纯入口模式：不绑端口、不起服务，只提供菜单栏图标入口。
+/// 由 headless 服务进程独立承载代理，退出本进程不影响服务。
+/// 模型切换走 Admin API 热加载，确保 headless 服务内存配置同步生效。
+pub fn run_tray_only(cfg: Arc<RwLock<Config>>, config_path: &Path, addr: &str) {
+    let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
+    let proxy = event_loop.create_proxy();
+
+    {
+        let p = proxy.clone();
+        MenuEvent::set_event_handler(Some(move |e| {
+            let _ = p.send_event(UserEvent::Menu(e));
+        }));
+    }
+    {
+        let p = proxy;
+        TrayIconEvent::set_event_handler(Some(move |e| {
+            let _ = p.send_event(UserEvent::Tray(e));
+        }));
+    }
+
+    let tray = TrayIconBuilder::new()
+        .with_tooltip("airelay")
+        .with_icon(make_icon())
+        .with_icon_as_template(cfg!(target_os = "macos"))
+        .with_menu(Box::new(build_menu(&cfg.read().unwrap())))
+        .build()
+        .expect("托盘图标创建失败");
+
+    let mut last_fp = fingerprint(&cfg.read().unwrap());
+    let admin_url = format!("http://{addr}/admin");
+    let api_base = format!("http://{addr}");
+    let config_path = config_path.to_path_buf();
+
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::WaitUntil(Instant::now() + Duration::from_secs(1));
+
+        match event {
+            Event::UserEvent(UserEvent::Menu(me)) => {
+                let id_str = me.id.0.as_str();
+                if let Some(rest) = id_str.strip_prefix("model:") {
+                    if let Some((provider, model)) = rest.split_once(':') {
+                        if switch_model_via_api(&api_base, provider, model) {
+                            {
+                                let mut c = cfg.write().unwrap();
+                                c.default.provider = provider.to_string();
+                                c.default.model = model.to_string();
+                            }
+                            tray.set_menu(Some(Box::new(build_menu(
+                                &cfg.read().unwrap(),
+                            ))));
+                        }
+                    }
+                } else if id_str == ID_ADMIN {
+                    open_browser(&admin_url);
+                } else if id_str == ID_QUIT {
+                    // 仅退出入口进程，headless 服务在独立进程不受影响
+                    *control_flow = ControlFlow::Exit;
+                }
+            }
+            Event::UserEvent(UserEvent::Tray(_)) => {}
+            _ => {
+                // 以 config.toml 为准周期性刷新：外部（Admin 页面/CLI）改动能反映到入口菜单
+                if let Ok(content) = std::fs::read_to_string(&config_path) {
+                    if let Ok(new_cfg) = toml::from_str::<Config>(&content) {
+                        let cur = fingerprint(&new_cfg);
+                        if cur != last_fp {
+                            last_fp = cur;
+                            *cfg.write().unwrap() = new_cfg;
+                            tray.set_menu(Some(Box::new(build_menu(
+                                &cfg.read().unwrap(),
+                            ))));
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+/// 通过 Admin API 热切换模型：POST /admin/api/config → 服务内存更新并落盘。
+/// 入口进程不直接改 config.toml，因为 headless 服务启动时一次性加载、不监听文件变化。
+fn switch_model_via_api(api_base: &str, provider: &str, model: &str) -> bool {
+    let client = match reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_millis(500))
+        .build()
+    {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+    let body = serde_json::json!({
+        "default": {"provider": provider, "model": model}
+    });
+    match client
+        .post(format!("{api_base}/admin/api/config"))
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .send()
+    {
+        Ok(resp) => {
+            let ok = resp.status().is_success();
+            eprintln!("[tray] switch {provider}/{model} via api -> ok={ok}");
+            ok
+        }
+        Err(e) => {
+            eprintln!("[tray] switch {provider}/{model} via api -> error: {e}");
+            false
+        }
+    }
+}
+
 fn build_menu(cfg: &Config) -> Menu {
     let menu = Menu::new();
 

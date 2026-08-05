@@ -102,7 +102,7 @@ else
     cat >> "$SHELL_RC" << 'ALIASEOF'
 
 # === airelay v4 ===
-alias ar='curl -s -o /dev/null http://127.0.0.1:8082/health 2>/dev/null && echo "airelay 已运行" || airelay --no-tray &'
+alias ar='curl -s -o /dev/null http://127.0.0.1:8082/health 2>/dev/null || (airelay --no-tray >/dev/null 2>&1 &); pgrep -f "airelay tray" >/dev/null 2>&1 || (airelay tray >/dev/null 2>&1 &); echo "airelay 就绪: 服务 + 入口"'
 export ANTHROPIC_BASE_URL=http://127.0.0.1:8082
 export ANTHROPIC_AUTH_TOKEN=any
 export OPENAI_BASE_URL=http://127.0.0.1:8082/v1

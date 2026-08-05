@@ -31,6 +31,7 @@ fn main() {
         Command::Switch(model_spec) => run_switch(&config_path, &model_spec),
         Command::List => run_list(&config_path),
         Command::Status => run_status(&config_path),
+        Command::Tray => run_tray_only(config_path),
         Command::Serve if args.no_tray => run_headless(config_path),
         Command::Serve => run_gui(config_path),
     }
@@ -107,6 +108,21 @@ fn run_gui(config_path: PathBuf) {
     // Run tray on main thread — must be main thread on macOS (AppKit constraint)
     tray::run(cfg, config_path, &addr_tray, notify);
     let _ = server_thread.join();
+}
+
+// ==================== Tray-only entry (no server) ====================
+
+fn run_tray_only(config_path: PathBuf) {
+    let cfg: Arc<std::sync::RwLock<config::Config>> =
+        Arc::new(config::load_or_create_config(&config_path));
+
+    let addr = {
+        let c = cfg.read().unwrap();
+        format!("{}:{}", c.server.host, c.server.port)
+    };
+
+    tracing::info!("airelay tray entry: http://{addr}/admin");
+    tray::run_tray_only(cfg, &config_path, &addr);
 }
 
 // ==================== Headless path (no tray) ====================
@@ -329,6 +345,7 @@ enum Command {
     List,
     Status,
     Serve,
+    Tray,
 }
 
 struct Args {
@@ -365,6 +382,7 @@ impl Args {
                 }
                 "list" => command = Command::List,
                 "status" => command = Command::Status,
+                "tray" => command = Command::Tray,
                 other => {
                     eprintln!("未知命令: {other}");
                     eprintln!("用法: airelay [--config PATH] [--no-tray] [switch <p/m> | list | status]");
