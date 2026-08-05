@@ -305,7 +305,7 @@ fn try_match_model<'a>(
 }
 
 /// Strip context window suffix like [1m], [256k], [128K] from model name
-fn strip_context_suffix(name: &str) -> Option<String> {
+pub fn strip_context_suffix(name: &str) -> Option<String> {
     let bytes = name.as_bytes();
     if bytes.last() != Some(&b']') {
         return None;

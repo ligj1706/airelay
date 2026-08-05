@@ -45,7 +45,7 @@ pub fn build_router(state: SharedState) -> Router {
         .route("/v1/messages/count_tokens", post(handle_count_tokens))
         .route("/v1/responses", post(handle_responses))
         .route("/v1/models", get(handle_models))
-        .route("/v1/models/{_name}", get(handle_model_detail))
+        .route("/v1/models/{*name}", get(handle_model_detail))
         .route("/health", get(handle_health))
         .route("/", get(handle_health))
         .route("/admin", get(handle_admin_ui))
@@ -639,14 +639,55 @@ async fn handle_models(State(state): State<SharedState>) -> Json<Value> {
 }
 
 async fn handle_model_detail(
+    State(state): State<SharedState>,
     axum::extract::Path(name): axum::extract::Path<String>,
-) -> Json<Value> {
+) -> Response {
+    let config = state.config.read().unwrap();
+    if !is_valid_model(&config, &name) {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "error": {
+                    "type": "invalid_request_error",
+                    "message": format!("模型不存在或未配置: {name}")
+                }
+            })),
+        )
+            .into_response();
+    }
     Json(serde_json::json!({
         "id": name,
         "object": "model",
         "created": 0,
         "owned_by": "airelay"
     }))
+    .into_response()
+}
+
+/// 校验模型名是否有效，与 handle_messages 的路由规则保持一致：
+/// - provider/model 格式：provider 必须存在且已配置 API Key
+/// - 纯模型名：必须命中某个已配置 API Key 的 provider 的 models 列表
+///   （含去掉 [1m]/[256k] 等上下文后缀后的模型名）
+fn is_valid_model(config: &Config, name: &str) -> bool {
+    if let Some((provider, _)) = name.split_once('/') {
+        return config
+            .providers
+            .get(provider)
+            .map(|p| !p.api_key.is_empty())
+            .unwrap_or(false);
+    }
+    let matches = |n: &str| {
+        config
+            .providers
+            .values()
+            .any(|p| !p.api_key.is_empty() && p.models.iter().any(|m| m == n))
+    };
+    if matches(name) {
+        return true;
+    }
+    config::strip_context_suffix(name)
+        .map(|stripped| matches(&stripped))
+        .unwrap_or(false)
 }
 
 // ==================== Health / Simple Endpoints ====================
