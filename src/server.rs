@@ -12,7 +12,7 @@ use futures::StreamExt;
 use reqwest::Client;
 use serde_json::Value;
 use tower_http::cors::{Any, CorsLayer};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use crate::admin_ui;
 use crate::config::{self, Config};
@@ -610,6 +610,65 @@ async fn handle_responses(
 }
 
 // ==================== Models Endpoint ====================
+
+/// 启动时同步本地 provider（base_url 指向本机，如 Ollama / LM Studio）的实际模型列表。
+/// 本地模型无法像云端那样预先枚举进白名单，这里启动时 GET {base_url}/models 自动拉取，
+/// 写入内存并落盘，之后任意纯模型名即可命中路由（config::try_match_model）。
+/// 拉取失败（本地服务未启动）时保留静态配置，不阻塞启动。
+pub async fn sync_local_models(state: &SharedState) {
+    let targets: Vec<(String, String)> = {
+        let cfg = state.config.read().unwrap();
+        cfg.providers
+            .iter()
+            .filter(|(_, p)| {
+                !p.api_key.is_empty() && {
+                    let url = p.base_url();
+                    url.contains("localhost") || url.contains("127.0.0.1")
+                }
+            })
+            .map(|(id, p)| (id.clone(), p.base_url().trim_end_matches('/').to_string()))
+            .collect()
+    };
+
+    for (id, base) in targets {
+        let url = format!("{base}/models");
+        match state.http_client.get(&url).send().await {
+            Ok(resp) if resp.status().is_success() => match resp.json::<Value>().await {
+                Ok(v) => {
+                    let models: Vec<String> = v["data"]
+                        .as_array()
+                        .map(|arr| {
+                            arr.iter()
+                                .filter_map(|m| m["id"].as_str().map(String::from))
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    if models.is_empty() {
+                        warn!("同步本地模型 [{id}]: 返回空列表，保留静态配置");
+                        continue;
+                    }
+                    {
+                        let mut cfg = state.config.write().unwrap();
+                        if let Some(p) = cfg.providers.get_mut(&id) {
+                            p.models = models.clone();
+                        }
+                    }
+                    let path = state.config_path.read().unwrap().clone();
+                    let cfg = state.config.read().unwrap();
+                    if let Err(e) = config::save_config(&path, &cfg) {
+                        warn!("同步本地模型 [{id}] 落盘失败: {e}");
+                    }
+                    info!("已同步本地模型 [{id}] {} 个: {:?}", models.len(), models);
+                }
+                Err(e) => warn!("同步本地模型 [{id}] 响应解析失败: {e}"),
+            },
+            Ok(resp) => warn!("同步本地模型 [{id}] 返回非 200: {}", resp.status()),
+            Err(e) => warn!(
+                "同步本地模型 [{id}] 失败: {e}（本地服务未启动，保留静态配置）"
+            ),
+        }
+    }
+}
 
 async fn handle_models(State(state): State<SharedState>) -> Json<Value> {
     let config = state.config.read().unwrap();

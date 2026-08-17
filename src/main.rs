@@ -68,6 +68,7 @@ fn run_gui(config_path: PathBuf) {
                 .build()
                 .unwrap();
             rt.block_on(async {
+                server::sync_local_models(&state).await;
                 let router = server::build_router(state);
                 let listener = match tokio::net::TcpListener::bind(&addr_server).await {
                     Ok(l) => {
@@ -152,6 +153,7 @@ fn run_headless(config_path: PathBuf) {
                 .build()
                 .unwrap();
             rt.block_on(async {
+                server::sync_local_models(&state).await;
                 let router = server::build_router(state);
                 let listener = match tokio::net::TcpListener::bind(&addr_server).await {
                     Ok(l) => l,
